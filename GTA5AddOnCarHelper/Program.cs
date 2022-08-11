@@ -58,13 +58,13 @@ namespace GTA5AddOnCarHelper
                     }
                     catch (Exception e)
                     {
-                        if (e.Message == Command.EXIT)
+                        if (e.Message == Constants.Commands.EXIT)
                             break;
                         else 
 
                         AnsiConsole.Clear();
 
-                        if (e.Message != Command.MENU)
+                        if (e.Message != Constants.Commands.MENU)
                             AnsiConsole.Write(string.Format("{0}\n\n", e.Message));
                     }
                 }
@@ -81,7 +81,7 @@ namespace GTA5AddOnCarHelper
 
             listOptions.Add(DLCListGenerator.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
-            listOptions.Add(new ListOption("Exit", null));
+            listOptions.Add(new ListOption(Constants.SelectionOptions.Exit, null));
 
             return listOptions;
         }

@@ -38,7 +38,7 @@ namespace GTA5AddOnCarHelper
                     }
                     catch (Exception e)
                     {
-                        if (e.Message != Command.CANCEL)
+                        if (e.Message != Constants.Commands.CANCEL)
                             throw;
                         else
                             WriteHeaderToConsole();
@@ -62,16 +62,16 @@ namespace GTA5AddOnCarHelper
             AnsiConsole.Write(rule);
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to return to the main menu.", Command.MENU));
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to end the current operation and return to the {1} menu.", Command.CANCEL, DisplayName));
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to quit.", Command.EXIT));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to return to the main menu.", Constants.Commands.MENU));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to end the current operation and return to the {1} menu.", Constants.Commands.CANCEL, DisplayName));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to quit.", Constants.Commands.EXIT));
             AnsiConsole.Write("\n\n");
         }
 
         protected virtual List<ListOption> GetListOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Return to main menu", null));
+            listOptions.Add(new ListOption(Constants.SelectionOptions.ReturnToMainMenu, null));
 
             return listOptions;
         }

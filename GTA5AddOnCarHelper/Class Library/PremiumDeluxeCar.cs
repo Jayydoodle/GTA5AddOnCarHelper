@@ -113,7 +113,7 @@ namespace GTA5AddOnCarHelper
                 if (!match.Success)
                     continue;
 
-                bool isNumeric = int.TryParse(match.Value, out int numValue);
+                bool isNumeric = int.TryParse(match.Value, out int numValue) && prop.PropertyType == typeof(int);
                 object value = isNumeric ? numValue : match.Value;
 
                 prop.SetValue(car, value);

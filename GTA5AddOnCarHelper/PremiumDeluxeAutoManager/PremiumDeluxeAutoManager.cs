@@ -50,7 +50,7 @@ namespace GTA5AddOnCarHelper
 
             SelectionPrompt<string> dataSourcePrompt = new SelectionPrompt<string>();
             dataSourcePrompt.Title = "Select a datasource:";
-            dataSourcePrompt.AddChoices(new string[] { DataSourceTypeMeta, DataSourceTypeIni, "Return To Main Menu" });
+            dataSourcePrompt.AddChoices(new string[] { DataSourceTypeMeta, DataSourceTypeIni, Constants.SelectionOptions.ReturnToMainMenu });
 
             while(Cars == null || !Cars.Any())
             {
@@ -73,7 +73,7 @@ namespace GTA5AddOnCarHelper
                         }
                         break;
                     default:
-                        throw new Exception(Command.MENU);
+                        throw new Exception(Constants.Commands.MENU);
                 }
             }
 
@@ -156,6 +156,8 @@ namespace GTA5AddOnCarHelper
             prompt.Required = false;
             prompt.PageSize = 20;
 
+            prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
+
             List<string> classes = Cars.Values.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                               .OrderBy(x => x).Distinct().ToList();
             if (classes.Any())
@@ -191,7 +193,56 @@ namespace GTA5AddOnCarHelper
             foreach (EditOptionChoice child in makeFilterChildren)
                 filter.Makes.Add(child.Details.Value);
 
+            if (choices.Any(x => x.Details.Value == nameof(ListFilter.OrderBys)))
+                filter.OrderBys = GetOrderBys();
+
             return filter;
+        }
+
+        private List<string> GetOrderBys()
+        {
+            IEnumerable<string> availableOrderBys = typeof(PremiumDeluxeCar).GetProperties()
+                                             .Where(x => x.Name != nameof(PremiumDeluxeCar.GXT))
+                                             .Select(x => x.Name);
+
+            string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = string.Format(promptTitleFormat, "first", Constants.SelectionOptions.Continue);
+            prompt.AddChoice(Constants.SelectionOptions.Continue);
+            prompt.AddChoices(availableOrderBys);
+
+            List<string> orderBys = new List<string>();
+            string selection = null;
+
+            while (selection != Constants.SelectionOptions.Continue && availableOrderBys.Any())
+            {
+                selection = AnsiConsole.Prompt(prompt);
+                availableOrderBys = availableOrderBys.Where(x => x != selection).ToList();
+
+                if (selection != Constants.SelectionOptions.Continue)
+                    orderBys.Add(selection);
+
+                prompt = new SelectionPrompt<string>();
+                prompt.Title = string.Format(promptTitleFormat, "next", Constants.SelectionOptions.Continue);
+                prompt.AddChoice(Constants.SelectionOptions.Continue);
+                prompt.AddChoices(availableOrderBys);
+
+                StringBuilder sb = new StringBuilder();
+                string first = orderBys.FirstOrDefault();
+
+                orderBys.ForEach(x =>
+                {
+                    string message = x == first ? string.Format("Ordering by [bold blue]{0}[/] ", x)
+                                                : string.Format("Then by [bold blue]{0}[/] ", x);
+                    sb.Append(message);
+                });
+
+                if (sb.Length > 0)
+                    prompt.Title = string.Format("{0}\n{1}", prompt.Title, sb.ToString());
+            }
+
+            return orderBys;
         }
 
         private ListFilter GetPartialMatchFiler()
@@ -249,7 +300,7 @@ namespace GTA5AddOnCarHelper
             Cars[car.Model] = car;
         }
 
-        private IEnumerable<PremiumDeluxeCar> BuildCarDisplay(IEnumerable<PremiumDeluxeCar> filteredCars)
+        private void BuildCarDisplay(IEnumerable<PremiumDeluxeCar> filteredCars, ListFilter filter)
         {
             Table table = new Table();
             table.AddColumn(nameof(PremiumDeluxeCar.Name));
@@ -258,23 +309,42 @@ namespace GTA5AddOnCarHelper
             table.AddColumn(nameof(PremiumDeluxeCar.Class));
             table.AddColumn(nameof(PremiumDeluxeCar.Price));
 
-            if (filteredCars.Count() < Cars.Values.Count)
+            IOrderedEnumerable<PremiumDeluxeCar> orderedCars = filteredCars.OrderBy(x => x.Model);
+            StringBuilder message = new StringBuilder();
+            message.Append("Ordered by [blue]Model[/] ");
+
+            if (filter != null && filter.OrderBys.Any())
             {
-                filteredCars = filteredCars.OrderBy(x => x.Make).ThenBy(x => x.Class).ThenBy(x => x.Model);
-                AnsiConsole.MarkupLine("Ordered by [blue]Make[/] then [blue]Class[/] and finally [blue]Model[/]");
-            }
-            else
-            {
-                filteredCars = filteredCars.OrderBy(x => x.Model);
-                AnsiConsole.MarkupLine("Ordered by [blue]Model[/]");
+                message = new StringBuilder();
+
+                for (int i = 0; i < filter.OrderBys.Count; i++)
+                {
+                    string propName = filter.OrderBys[i];
+                    PropertyInfo prop = typeof(PremiumDeluxeCar).GetProperty(propName);
+
+                    if (i == 0)
+                    {
+                        orderedCars = prop.PropertyType != typeof(int) ? orderedCars.OrderBy(x => prop.GetValue(x))
+                                                                       : orderedCars.OrderByDescending(x => prop.GetValue(x));
+
+                        message.Append(string.Format("Ordered by [blue]{0}[/] ", propName));
+                    }
+                    else
+                    {
+                        orderedCars = prop.PropertyType != typeof(int) ? orderedCars.ThenBy(x => prop.GetValue(x))
+                                                                       : orderedCars.ThenByDescending(x => prop.GetValue(x));
+
+                        message.Append(string.Format("Then by [blue]{0}[/] ", propName));
+                    }
+                }
             }
 
-            foreach (PremiumDeluxeCar car in filteredCars)
+            AnsiConsole.MarkupLine(message.ToString());
+
+            foreach (PremiumDeluxeCar car in orderedCars)
                 table.AddRow(new string[] { car.Name, car.Model, car.Make, car.Class, car.Price.ToString() });
 
             AnsiConsole.Write(table);
-
-            return filteredCars;
         }
 
         private IEnumerable<PremiumDeluxeCar> FilterCarList(ListFilter filter)
@@ -302,7 +372,7 @@ namespace GTA5AddOnCarHelper
             ListFilter filter = GetSelectionFilter();
             IEnumerable<PremiumDeluxeCar> filteredCars = FilterCarList(filter);
 
-            BuildCarDisplay(filteredCars);
+            BuildCarDisplay(filteredCars, filter);
         }
 
         private void EditCar()
@@ -346,7 +416,7 @@ namespace GTA5AddOnCarHelper
             prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
             prompt.AddChoice(new ListOption<ListFilter>("Filter By Class/Make", GetSelectionFilter));
             prompt.AddChoice(new ListOption<ListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoices(new ListOption<ListFilter>("Return To Menu", null));
+            prompt.AddChoices(new ListOption<ListFilter>(Constants.SelectionOptions.ReturnToMenu, null));
 
             ListOption<ListFilter> selection = AnsiConsole.Prompt(prompt);
             ListFilter filter = selection.Function();
@@ -360,7 +430,7 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            BuildCarDisplay(filteredCars);
+            BuildCarDisplay(filteredCars, filter);
 
             EditOptions options = GetEditOptions(true);
 
@@ -412,10 +482,10 @@ namespace GTA5AddOnCarHelper
             string confirmation = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                 .Title("\nWould you like to proceed?")
-                .AddChoices("Yes", "No")
+                .AddChoices(Constants.SelectionOptions.Yes, Constants.SelectionOptions.No)
             );
 
-            if (confirmation == "No")
+            if (confirmation == Constants.SelectionOptions.No)
                 return;
 
             foreach(PremiumDeluxeCar car in filteredCars)
@@ -432,12 +502,12 @@ namespace GTA5AddOnCarHelper
 
         private void SaveChanges()
         {
-            Utilities.ArchiveFiles(IniDirectory, "*.ini");
-
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
                                                                      .ToDictionary(x => x.Key, x => x.OrderBy(y => y.Model).ToList());
 
-            foreach(KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
+            Utilities.ArchiveFiles(IniDirectory, "*.ini", carsByClass.Keys.ToList());
+
+            foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
                 StringBuilder content = new StringBuilder();
 
@@ -477,12 +547,14 @@ namespace GTA5AddOnCarHelper
 
         private class ListFilter
         {
+            public List<string> OrderBys { get; set; }
             public List<string> Makes { get; set; }
             public List<string> Classes { get; set; }
             public string TextMatch { get; set; }
 
             public ListFilter()
             {
+                OrderBys = new List<string>();
                 Makes = new List<string>();
                 Classes = new List<string>();
             }
@@ -556,10 +628,6 @@ namespace GTA5AddOnCarHelper
                 DisplayName = displayName;
                 Value = value;
             }
-        }
-
-        private class ProtectedAttribute : Attribute
-        {
         }
 
         #endregion

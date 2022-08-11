@@ -64,7 +64,7 @@ namespace GTA5AddOnCarHelper
             });
 
             Utilities.WriteToFile(destDir, OutputFileName, dlcList);
-            Utilities.GetInput(string.Format("Press enter to return to the main menu, or enter [bold red]{0}[/] to exit", Command.EXIT));
+            Utilities.GetInput(string.Format("Press enter to return to the main menu, or enter [bold red]{0}[/] to exit", Constants.Commands.EXIT));
         }
 
         #endregion

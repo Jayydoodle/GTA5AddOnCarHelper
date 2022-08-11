@@ -41,12 +41,20 @@ namespace GTA5AddOnCarHelper
 
     public class ListOption<T> : ListOption
     {
+        #region Properties
+
         public new Func<T> Function { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public ListOption(string displayName, Func<T> function)
         {
             DisplayName = displayName;
             Function = function;
         }
+
+        #endregion
     }
 }

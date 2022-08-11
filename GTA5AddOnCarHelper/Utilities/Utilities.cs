@@ -61,9 +61,12 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        public static void ArchiveFiles(DirectoryInfo dir, string searchPattern)
+        public static void ArchiveFiles(DirectoryInfo dir, string searchPattern, List<string> fileNames = null)
         {
             List<FileInfo> files = dir.GetFiles(searchPattern).ToList();
+
+            if (fileNames != null)
+                files = files.Where(x => fileNames.Any(y => x.Name == y)).ToList();
 
             if (!files.Any())
                 return;
@@ -95,7 +98,7 @@ namespace GTA5AddOnCarHelper
 
             string command = value.ToUpper();
 
-            if (command == Command.MENU || command == Command.EXIT || command == Command.CANCEL)
+            if (command == Constants.Commands.MENU || command == Constants.Commands.EXIT || command == Constants.Commands.CANCEL)
                 throw new Exception(command);
 
             return value;
@@ -112,7 +115,7 @@ namespace GTA5AddOnCarHelper
                 iteration++;
 
                 if (iteration % 2 == 0)
-                    AnsiConsole.MarkupLine(string.Format("[red]Reminder[/]: You may enter [red bold]{0}[/] at any time to return to the menu\n", Command.CANCEL));
+                    AnsiConsole.MarkupLine(string.Format("[red]Reminder[/]: You may enter [red bold]{0}[/] at any time to return to the menu\n", Constants.Commands.CANCEL));
 
                 item = function();
 
@@ -131,12 +134,5 @@ namespace GTA5AddOnCarHelper
         }
 
         #endregion
-    }
-
-    public class Command
-    {
-        public const string CANCEL = "CANCEL";
-        public const string MENU = "MENU";
-        public const string EXIT = "EXIT";
     }
 }
