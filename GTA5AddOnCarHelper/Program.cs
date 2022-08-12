@@ -79,8 +79,9 @@ namespace GTA5AddOnCarHelper
         {
             List<ListOption> listOptions = new List<ListOption>();
 
-            listOptions.Add(DLCListGenerator.Instance);
+            listOptions.Add(VehicleMetaFileManager.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
+            listOptions.Add(DLCListGenerator.Instance);
             listOptions.Add(new ListOption(Constants.SelectionOptions.Exit, null));
 
             return listOptions;

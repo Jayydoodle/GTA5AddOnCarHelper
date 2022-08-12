@@ -19,7 +19,8 @@ namespace GTA5AddOnCarHelper
 
         #region Properties
 
-        public override string DisplayName { get => "DLC List Generator"; }
+        public override string DisplayName => nameof(DLCListGenerator).SplitByCase();
+        protected override string WorkingDirectoryName => null;
 
         private static readonly Lazy<DLCListGenerator> _instance = new Lazy<DLCListGenerator>(() => new DLCListGenerator());
 
@@ -45,6 +46,8 @@ namespace GTA5AddOnCarHelper
 
         public override void Run()
         {
+            Initialize();
+
             string sourceDirPrompt = "\nEnter the path to the source directory.  This is the directory containing your cars in " +
                 "individual folders as they would appear in the mods\\update\\x64\\dlcpacks folder: ";
 

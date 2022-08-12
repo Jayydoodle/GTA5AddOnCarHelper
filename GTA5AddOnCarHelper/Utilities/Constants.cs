@@ -15,6 +15,20 @@ namespace GTA5AddOnCarHelper
             public const string EXIT = "EXIT";
         }
 
+        public static class Extentions
+        {
+            public const string Ini = ".ini";
+            public const string Meta = ".meta";
+        }
+
+        public static class FileNames
+        {
+            public const string ColorsMeta = "carcols";
+            public const string HandlingMeta = "handling";
+            public const string VehicleMeta = "vehicles";
+            public const string VariationsMeta = "carvariations";
+        }
+
         public static class SelectionOptions
         {
             public const string Yes = "Yes";

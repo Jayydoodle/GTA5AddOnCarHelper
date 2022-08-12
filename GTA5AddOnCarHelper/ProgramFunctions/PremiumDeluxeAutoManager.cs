@@ -14,7 +14,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string DirectoryName = "PremiumDeluxeAutoManager";
         private const string DataSourceTypeIni = "Premium Deluxe Ini Files";
         private const string DataSourceTypeMeta = "Vehicle.meta Files";
 
@@ -22,14 +21,13 @@ namespace GTA5AddOnCarHelper
 
         #region Properties
 
-        public override string DisplayName { get => "Premium Deluxe Auto Manager"; }
+        public override string DisplayName => nameof(PremiumDeluxeAutoManager).SplitByCase();
+        protected override string WorkingDirectoryName => nameof(PremiumDeluxeAutoManager);
 
         private static readonly Lazy<PremiumDeluxeAutoManager> _instance = new Lazy<PremiumDeluxeAutoManager>(() => new PremiumDeluxeAutoManager());
-
         public static PremiumDeluxeAutoManager Instance => _instance.Value;
 
         private Dictionary<string, PremiumDeluxeCar> Cars { get; set; }
-        private DirectoryInfo IniDirectory { get; set; }
 
         #endregion
 
@@ -45,8 +43,8 @@ namespace GTA5AddOnCarHelper
 
         public override void Run()
         {
+            Initialize();
             Cars = null;
-            IniDirectory = EnsureInidirectory();
 
             SelectionPrompt<string> dataSourcePrompt = new SelectionPrompt<string>();
             dataSourcePrompt.Title = "Select a datasource:";
@@ -62,12 +60,12 @@ namespace GTA5AddOnCarHelper
                         Cars = PremiumDeluxeCar.GetFromMetaFiles();
                         break;
                     case DataSourceTypeIni:
-                        Cars = PremiumDeluxeCar.GetFromIniDirectory(IniDirectory);
+                        Cars = PremiumDeluxeCar.GetFromIniDirectory(WorkingDirectory);
 
                         if (!Cars.Any())
                         {
                             string message = string.Format("The directory [green]{0}[/] has no ini files, or the " +
-                                "ini files present in the directory contain invalid data\n", IniDirectory.FullName);
+                                "ini files present in the directory contain invalid data\n", WorkingDirectory.FullName);
 
                             AnsiConsole.MarkupLine(message);
                         }
@@ -83,19 +81,6 @@ namespace GTA5AddOnCarHelper
         #endregion
 
         #region Private API
-
-        private DirectoryInfo EnsureInidirectory()
-        {
-            DirectoryInfo workingDirectory = PathDictionary.GetDirectory(PathDictionary.Node.WorkingDirectoryPath);
-            string path = Path.Combine(workingDirectory.FullName, DirectoryName);
-
-            DirectoryInfo iniDirectory = new DirectoryInfo(path);
-
-            if (!iniDirectory.Exists)
-                iniDirectory = workingDirectory.CreateSubdirectory(DirectoryName);
-
-            return iniDirectory;
-        }
 
         protected override List<ListOption> GetListOptions()
         {
@@ -202,8 +187,8 @@ namespace GTA5AddOnCarHelper
         private List<string> GetOrderBys()
         {
             IEnumerable<string> availableOrderBys = typeof(PremiumDeluxeCar).GetProperties()
-                                             .Where(x => x.Name != nameof(PremiumDeluxeCar.GXT))
-                                             .Select(x => x.Name);
+                                                     .Where(x => x.Name != nameof(PremiumDeluxeCar.GXT))
+                                                     .Select(x => x.Name);
 
             string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
 
@@ -505,7 +490,7 @@ namespace GTA5AddOnCarHelper
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
                                                                      .ToDictionary(x => x.Key, x => x.OrderBy(y => y.Model).ToList());
 
-            Utilities.ArchiveFiles(IniDirectory, "*.ini", carsByClass.Keys.ToList());
+            Utilities.ArchiveFiles(WorkingDirectory, "*.ini", carsByClass.Keys.ToList());
 
             foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
@@ -516,7 +501,7 @@ namespace GTA5AddOnCarHelper
                     content.AppendLine(car.Save());
                 });
 
-                Utilities.WriteToFile(IniDirectory, string.Format("{0}.ini", pair.Key), content);
+                Utilities.WriteToFile(WorkingDirectory, string.Format("{0}.ini", pair.Key), content);
             };
         }
 
