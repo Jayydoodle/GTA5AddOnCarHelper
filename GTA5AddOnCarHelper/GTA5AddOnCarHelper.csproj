@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CustomConsole\CustomSpectreConsole.csproj" />
+    <ProjectReference Include="..\CustomSpectreConsole\CustomSpectreConsole.csproj" />
   </ItemGroup>
 
 </Project>
