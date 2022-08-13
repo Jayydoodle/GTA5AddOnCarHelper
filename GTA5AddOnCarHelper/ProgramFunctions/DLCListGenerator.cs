@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace GTA5AddOnCarHelper
 {
-    public sealed class DLCListGenerator : ProgramFunctionBase
+    public sealed class DLCListGenerator : AddOnCarHelperFunctionBase
     {
         #region Constants
 
@@ -67,7 +68,7 @@ namespace GTA5AddOnCarHelper
             });
 
             Utilities.WriteToFile(destDir, OutputFileName, dlcList);
-            Utilities.GetInput(string.Format("Press enter to return to the main menu, or enter [bold red]{0}[/] to exit", Constants.Commands.EXIT));
+            Utilities.GetInput(string.Format("Press enter to return to the main menu, or enter [bold red]{0}[/] to exit", CustomSpectreConsole.Constants.Commands.EXIT));
         }
 
         #endregion

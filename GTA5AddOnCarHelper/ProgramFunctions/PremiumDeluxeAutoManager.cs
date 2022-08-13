@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,10 +8,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace GTA5AddOnCarHelper
 {
-    public sealed class PremiumDeluxeAutoManager : ProgramFunctionBase
+    public sealed class PremiumDeluxeAutoManager : AddOnCarHelperFunctionBase
     {
         #region Constants
 
@@ -48,7 +50,7 @@ namespace GTA5AddOnCarHelper
 
             SelectionPrompt<string> dataSourcePrompt = new SelectionPrompt<string>();
             dataSourcePrompt.Title = "Select a datasource:";
-            dataSourcePrompt.AddChoices(new string[] { DataSourceTypeMeta, DataSourceTypeIni, Constants.SelectionOptions.ReturnToMainMenu });
+            dataSourcePrompt.AddChoices(new string[] { DataSourceTypeMeta, DataSourceTypeIni, CustomSpectreConsole.Constants.SelectionOptions.ReturnToMainMenu });
 
             while(Cars == null || !Cars.Any())
             {
@@ -71,7 +73,7 @@ namespace GTA5AddOnCarHelper
                         }
                         break;
                     default:
-                        throw new Exception(Constants.Commands.MENU);
+                        throw new Exception(CustomSpectreConsole.Constants.Commands.MENU);
                 }
             }
 
@@ -96,149 +98,19 @@ namespace GTA5AddOnCarHelper
             return listOptions;
         }
 
-        private EditOptions GetEditOptions(bool isBulkEdit = false)
+        private PremiumDeluxeListFilter GetSelectionFilter()
         {
-            MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
-            prompt.Title = "Select the fields you wish to edit";
-            prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
-            prompt.PageSize = 20;
-
-            IEnumerable<PropertyInfo> baseChoices = typeof(EditOptions).GetProperties().Where(x => x.PropertyType == typeof(bool));
-
-            if (isBulkEdit)
-                baseChoices = baseChoices.Where(x => !x.CustomAttributes.Any(y => y.AttributeType == typeof(ProtectedAttribute)));
-
-            foreach (PropertyInfo prop in baseChoices)
-            {
-                EditOptionChoice choice = new EditOptionChoice(prop.Name.SplitByCase(), prop.Name);
-                prompt.AddChoice(choice).Select();
-            }
-
-            List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
-
-            EditOptions options = new EditOptions();
-
-            foreach (PropertyInfo prop in baseChoices)
-            {
-                if (choices.Any(x => x.Details.Value == prop.Name))
-                    prop.SetValue(options, true);
-            }
-
-            if (isBulkEdit)
-                return options;
-
-            ListFilter filter = GetSelectionFilter();
-            options.Filter = filter;
-
-            return options;
+            return new PremiumDeluxeListFilter(Cars.Values);
         }
 
-        private ListFilter GetSelectionFilter()
-        {
-            MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
-            prompt.Title = "Select the options you wish to use to filter the list of cars";
-            prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
-            prompt.Required = false;
-            prompt.PageSize = 20;
-
-            prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
-
-            List<string> classes = Cars.Values.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
-                                              .OrderBy(x => x).Distinct().ToList();
-            if (classes.Any())
-            {
-                EditOptionChoice filterClasses = new EditOptionChoice("Filter By Class", nameof(ListFilter.Classes));
-
-                classes.ForEach(x => filterClasses.AddChild(x, x));
-                MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterClasses, filterClasses.Children);
-            }
-
-            List<string> makes = Cars.Values.Where(x => !string.IsNullOrEmpty(x.Make)).Select(x => x.Make)
-                                            .OrderBy(x => x).Distinct().ToList();
-            if (makes.Any())
-            {
-                EditOptionChoice filterMakes = new EditOptionChoice("Filter By Make", nameof(ListFilter.Makes));
-
-                makes.ForEach(x => filterMakes.AddChild(x, x));
-                MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterMakes, filterMakes.Children);
-            }
-
-            List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
-            ListFilter filter = new ListFilter();
-
-            IEnumerable<EditOptionChoice> classfilterChildren = choices.Where(x => x.Parent != null)
-                                                            .Where(x => x.Parent.Details.Value == nameof(ListFilter.Classes));
-
-            IEnumerable<EditOptionChoice> makeFilterChildren = choices.Where(x => x.Parent != null)
-                                                            .Where(x => x.Parent.Details.Value == nameof(ListFilter.Makes));
-
-            foreach (EditOptionChoice child in classfilterChildren)
-                filter.Classes.Add(child.Details.Value);
-
-            foreach (EditOptionChoice child in makeFilterChildren)
-                filter.Makes.Add(child.Details.Value);
-
-            if (choices.Any(x => x.Details.Value == nameof(ListFilter.OrderBys)))
-                filter.OrderBys = GetOrderBys();
-
-            return filter;
-        }
-
-        private List<string> GetOrderBys()
-        {
-            IEnumerable<string> availableOrderBys = typeof(PremiumDeluxeCar).GetProperties()
-                                                     .Where(x => x.Name != nameof(PremiumDeluxeCar.GXT))
-                                                     .Select(x => x.Name);
-
-            string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
-
-            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
-            prompt.Title = string.Format(promptTitleFormat, "first", Constants.SelectionOptions.Continue);
-            prompt.AddChoice(Constants.SelectionOptions.Continue);
-            prompt.AddChoices(availableOrderBys);
-
-            List<string> orderBys = new List<string>();
-            string selection = null;
-
-            while (selection != Constants.SelectionOptions.Continue && availableOrderBys.Any())
-            {
-                selection = AnsiConsole.Prompt(prompt);
-                availableOrderBys = availableOrderBys.Where(x => x != selection).ToList();
-
-                if (selection != Constants.SelectionOptions.Continue)
-                    orderBys.Add(selection);
-
-                prompt = new SelectionPrompt<string>();
-                prompt.Title = string.Format(promptTitleFormat, "next", Constants.SelectionOptions.Continue);
-                prompt.AddChoice(Constants.SelectionOptions.Continue);
-                prompt.AddChoices(availableOrderBys);
-
-                StringBuilder sb = new StringBuilder();
-                string first = orderBys.FirstOrDefault();
-
-                orderBys.ForEach(x =>
-                {
-                    string message = x == first ? string.Format("Ordering by [bold blue]{0}[/] ", x)
-                                                : string.Format("Then by [bold blue]{0}[/] ", x);
-                    sb.Append(message);
-                });
-
-                if (sb.Length > 0)
-                    prompt.Title = string.Format("{0}\n{1}", prompt.Title, sb.ToString());
-            }
-
-            return orderBys;
-        }
-
-        private ListFilter GetPartialMatchFiler()
+        private PremiumDeluxeListFilter GetPartialMatchFiler()
         {
             string prompt = string.Format("Enter in the text you would like to search for.  The list of cars " +
                 "produced will be based on a partial text on the [blue]{0}[/] or [blue]{1}[/]: ", nameof(PremiumDeluxeCar.Name), nameof(PremiumDeluxeCar.Model));
 
             string input = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
 
-            ListFilter filter = new ListFilter();
-            filter.TextMatch = input;
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(input);
 
             return filter;
         }
@@ -285,79 +157,14 @@ namespace GTA5AddOnCarHelper
             Cars[car.Model] = car;
         }
 
-        private void BuildCarDisplay(IEnumerable<PremiumDeluxeCar> filteredCars, ListFilter filter)
-        {
-            Table table = new Table();
-            table.AddColumn(nameof(PremiumDeluxeCar.Name));
-            table.AddColumn(nameof(PremiumDeluxeCar.Model));
-            table.AddColumn(nameof(PremiumDeluxeCar.Make));
-            table.AddColumn(nameof(PremiumDeluxeCar.Class));
-            table.AddColumn(nameof(PremiumDeluxeCar.Price));
-
-            IOrderedEnumerable<PremiumDeluxeCar> orderedCars = filteredCars.OrderBy(x => x.Model);
-            StringBuilder message = new StringBuilder();
-            message.Append("Ordered by [blue]Model[/] ");
-
-            if (filter != null && filter.OrderBys.Any())
-            {
-                message = new StringBuilder();
-
-                for (int i = 0; i < filter.OrderBys.Count; i++)
-                {
-                    string propName = filter.OrderBys[i];
-                    PropertyInfo prop = typeof(PremiumDeluxeCar).GetProperty(propName);
-
-                    if (i == 0)
-                    {
-                        orderedCars = prop.PropertyType != typeof(int) ? orderedCars.OrderBy(x => prop.GetValue(x))
-                                                                       : orderedCars.OrderByDescending(x => prop.GetValue(x));
-
-                        message.Append(string.Format("Ordered by [blue]{0}[/] ", propName));
-                    }
-                    else
-                    {
-                        orderedCars = prop.PropertyType != typeof(int) ? orderedCars.ThenBy(x => prop.GetValue(x))
-                                                                       : orderedCars.ThenByDescending(x => prop.GetValue(x));
-
-                        message.Append(string.Format("Then by [blue]{0}[/] ", propName));
-                    }
-                }
-            }
-
-            AnsiConsole.MarkupLine(message.ToString());
-
-            foreach (PremiumDeluxeCar car in orderedCars)
-                table.AddRow(new string[] { car.Name, car.Model, car.Make, car.Class, car.Price.ToString() });
-
-            AnsiConsole.Write(table);
-        }
-
-        private IEnumerable<PremiumDeluxeCar> FilterCarList(ListFilter filter)
-        {
-            IEnumerable<PremiumDeluxeCar> filteredCars = Cars.Values;
-
-            if (filter.Classes.Any())
-                filteredCars = filteredCars.Where(x => filter.Classes.Contains(x.Class));
-
-            if (filter.Makes.Any())
-                filteredCars = filteredCars.Where(x => filter.Makes.Contains(x.Make));
-
-            if (!string.IsNullOrEmpty(filter.TextMatch))
-                filteredCars = filteredCars.Where(x => x.Model.Contains(filter.TextMatch) || x.Name.Contains(filter.TextMatch));
-
-            return filteredCars;
-        }
-
         #endregion
 
         #region Private API: Prompt Functions
 
         private void ShowAllCars()
         {
-            ListFilter filter = GetSelectionFilter();
-            IEnumerable<PremiumDeluxeCar> filteredCars = FilterCarList(filter);
-
-            BuildCarDisplay(filteredCars, filter);
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
+            TableDisplay.BuildDisplay<PremiumDeluxeCar>(filter);
         }
 
         private void EditCar()
@@ -375,20 +182,12 @@ namespace GTA5AddOnCarHelper
 
         private void EditCarsByFilter()
         {
-            EditOptions options = GetEditOptions();
+            EditOptions<PremiumDeluxeCar> options = EditOptions<PremiumDeluxeCar>.Get();
+            List<PropertyInfo> propsToEdit = options.GetEditableProperties();
 
-            List<string> editTypeNames = typeof(EditOptions).GetProperties()
-                                         .Where(x => x.PropertyType == typeof(bool))
-                                         .Where(x => ((bool)x.GetValue(options)))
-                                         .Select(x => x.Name.Replace(EditOptions.PropPrefix, string.Empty))
-                                         .ToList();
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
 
-            List<PropertyInfo> propsToEdit = typeof(PremiumDeluxeCar).GetProperties()
-                                             .Where(x => editTypeNames.Contains(x.Name)).ToList();
-
-            IEnumerable<PremiumDeluxeCar> filteredCars = FilterCarList(options.Filter);
-
-            foreach(PremiumDeluxeCar car in filteredCars)
+            foreach (PremiumDeluxeCar car in filter.FilterList())
             {
                 AnsiConsole.MarkupLine(string.Format("\nNow Editing: [yellow]{0}[/]", car.GetDisplayName()));
                 UpdateCarFields(car, propsToEdit);
@@ -397,17 +196,17 @@ namespace GTA5AddOnCarHelper
 
         private void BulkEditCars()
         {
-            SelectionPrompt<ListOption<ListFilter>> prompt = new SelectionPrompt<ListOption<ListFilter>>();
+            SelectionPrompt<ListOption<PremiumDeluxeListFilter>> prompt = new SelectionPrompt<ListOption<PremiumDeluxeListFilter>>();
             prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
-            prompt.AddChoice(new ListOption<ListFilter>("Filter By Class/Make", GetSelectionFilter));
-            prompt.AddChoice(new ListOption<ListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoices(new ListOption<ListFilter>(Constants.SelectionOptions.ReturnToMenu, null));
+            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", GetSelectionFilter));
+            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
+            prompt.AddChoices(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, null));
 
-            ListOption<ListFilter> selection = AnsiConsole.Prompt(prompt);
-            ListFilter filter = selection.Function();
+            ListOption<PremiumDeluxeListFilter> selection = AnsiConsole.Prompt(prompt);
+            PremiumDeluxeListFilter filter = selection.Function();
 
             AnsiConsole.WriteLine();
-            IEnumerable<PremiumDeluxeCar> filteredCars = FilterCarList(filter);
+            IEnumerable<PremiumDeluxeCar> filteredCars = filter.FilterList();
 
             if (!filteredCars.Any()) 
             {
@@ -415,18 +214,10 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            BuildCarDisplay(filteredCars, filter);
+            TableDisplay.BuildDisplay<PremiumDeluxeCar>(filter);
 
-            EditOptions options = GetEditOptions(true);
-
-            List<string> editTypeNames = typeof(EditOptions).GetProperties()
-                                         .Where(x => x.PropertyType == typeof(bool))
-                                         .Where(x => ((bool)x.GetValue(options)))
-                                         .Select(x => x.Name.Replace(EditOptions.PropPrefix, string.Empty))
-                                         .ToList();
-
-            List<PropertyInfo> propsToEdit = typeof(PremiumDeluxeCar).GetProperties()
-                                             .Where(x => editTypeNames.Contains(x.Name)).ToList();
+            EditOptions<PremiumDeluxeCar> options =  EditOptions<PremiumDeluxeCar>.Get(false);
+            List<PropertyInfo> propsToEdit = options.GetEditableProperties();
 
             Dictionary<string, object> enteredValues = new Dictionary<string, object>();
 
@@ -467,10 +258,10 @@ namespace GTA5AddOnCarHelper
             string confirmation = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                 .Title("\nWould you like to proceed?")
-                .AddChoices(Constants.SelectionOptions.Yes, Constants.SelectionOptions.No)
+                .AddChoices(CustomSpectreConsole.Constants.SelectionOptions.Yes, CustomSpectreConsole.Constants.SelectionOptions.No)
             );
 
-            if (confirmation == Constants.SelectionOptions.No)
+            if (confirmation == CustomSpectreConsole.Constants.SelectionOptions.No)
                 return;
 
             foreach(PremiumDeluxeCar car in filteredCars)
@@ -509,109 +300,67 @@ namespace GTA5AddOnCarHelper
 
         #region Helper Classes
 
-        private class EditOptions
+        public class PremiumDeluxeListFilter : ListFilter<PremiumDeluxeCar> 
         {
-            public const string PropPrefix = "Edit";
-
-            [Protected]
-            public bool EditName { get; set; }
-            public bool EditMake { get; set; }
-            [Protected]
-            public bool EditModel { get; set; }
-            public bool EditClass { get; set; }
-            [Protected]
-            public bool EditGXT { get; set; }
-            public bool EditPrice { get; set; }
-            public ListFilter Filter { get; set; }
-
-            public EditOptions()
+            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list) : base(list)
             {
-                Filter = new ListFilter();
-            }
-        }
-
-        private class ListFilter
-        {
-            public List<string> OrderBys { get; set; }
-            public List<string> Makes { get; set; }
-            public List<string> Classes { get; set; }
-            public string TextMatch { get; set; }
-
-            public ListFilter()
-            {
-                OrderBys = new List<string>();
-                Makes = new List<string>();
-                Classes = new List<string>();
-            }
-        }
-
-        private enum ListFilterType
-        {
-            FilterSelection,
-            PartialTextMatch
-        }
-
-        private class EditOptionChoice : IMultiSelectionItem<EditOptionChoiceDetails>
-        {
-            public EditOptionChoice Parent { get; set; }
-            public List<EditOptionChoice> Children { get; set; }
-            public EditOptionChoiceDetails Details { get; set; }
-            public bool IsSelected { get; set; }
-
-            public EditOptionChoice(EditOptionChoiceDetails details)
-            {
-                Details = details;
             }
 
-            public EditOptionChoice(string displayName, string value)
+            public PremiumDeluxeListFilter(string textMatch) : base(textMatch)
             {
-                Details = new EditOptionChoiceDetails(displayName, value);
             }
 
-            public ISelectionItem<EditOptionChoiceDetails> AddChild(string displayName, string value)
+            protected override IEnumerable<PremiumDeluxeCar> ApplyTextMatch(IEnumerable<PremiumDeluxeCar> list)
             {
-                EditOptionChoiceDetails childDetails = new EditOptionChoiceDetails(displayName, value);
-                return AddChild(childDetails);
+                return list.Where(x => (!string.IsNullOrEmpty(x.Model) && x.Model.Contains(TextMatch)) || (!string.IsNullOrEmpty(x.Name) && x.Name.Contains(TextMatch)));
             }
 
-            public ISelectionItem<EditOptionChoiceDetails> AddChild(EditOptionChoiceDetails details)
+            protected override void Prompt(IEnumerable<PremiumDeluxeCar> cars)
             {
-                EditOptionChoice child = new EditOptionChoice(details);
-                child.Parent = this;
+                MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+                prompt.Title = "Select the options you wish to use to filter the list of cars";
+                prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
+                prompt.Required = false;
+                prompt.PageSize = 20;
 
-                if (Children == null)
-                    Children = new List<EditOptionChoice>();
+                prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(PremiumDeluxeListFilter.OrderBys)));
 
-                Children.Add(child);
+                List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
+                                           .OrderBy(x => x).Distinct().ToList();
+                if (classes.Any())
+                {
+                    EditOptionChoice filterClasses = new EditOptionChoice("Filter By Class", nameof(PremiumDeluxeCar.Class));
 
-                return child;
-            }
+                    classes.ForEach(x => filterClasses.AddChild(x, x));
+                    MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterClasses, filterClasses.Children);
+                }
 
-            public IMultiSelectionItem<EditOptionChoiceDetails> Select()
-            {
-                IsSelected = true;
+                List<string> makes = cars.Where(x => !string.IsNullOrEmpty(x.Make)).Select(x => x.Make)
+                                         .OrderBy(x => x).Distinct().ToList();
+                if (makes.Any())
+                {
+                    EditOptionChoice filterMakes = new EditOptionChoice("Filter By Make", nameof(PremiumDeluxeCar.Make));
 
-                if (Parent != null)
-                    Parent.Select();
+                    makes.ForEach(x => filterMakes.AddChild(x, x));
+                    MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterMakes, filterMakes.Children);
+                }
 
-                return this;
-            }
+                List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
 
-            public override string ToString()
-            {
-                return Details.DisplayName;
-            }
-        }
+                IEnumerable<EditOptionChoice> classfilterChildren = choices.Where(x => x.Parent != null)
+                                                                .Where(x => x.Parent.Details.Value == nameof(PremiumDeluxeCar.Class));
 
-        private class EditOptionChoiceDetails
-        {
-            public string DisplayName { get; set; }
-            public string Value { get; set; }
+                IEnumerable<EditOptionChoice> makeFilterChildren = choices.Where(x => x.Parent != null)
+                                                                .Where(x => x.Parent.Details.Value == nameof(PremiumDeluxeCar.Make));
 
-            public EditOptionChoiceDetails(string displayName, string value)
-            {
-                DisplayName = displayName;
-                Value = value;
+                foreach (EditOptionChoice child in classfilterChildren)
+                    AddFilter(nameof(PremiumDeluxeCar.Class), child.Details.Value);
+
+                foreach (EditOptionChoice child in makeFilterChildren)
+                    AddFilter(nameof(PremiumDeluxeCar.Make), child.Details.Value);
+
+                if (choices.Any(x => x.Details.Value == nameof(PremiumDeluxeListFilter.OrderBys)))
+                    OrderBys = GetOrderBys();
             }
         }
 

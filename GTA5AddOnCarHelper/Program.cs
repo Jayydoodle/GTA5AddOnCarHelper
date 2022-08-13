@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +16,8 @@ namespace GTA5AddOnCarHelper
             prompt.Title = "Select an option:";
             prompt.AddChoices(CreateListOptions());
 
+            LanguageDictionary.Instance.Clear();
+
             while(true)
             {
                 Rule rule = new Rule("[green]GTA 5 AddOn Car Helper[/]\n").DoubleBorder<Rule>();
@@ -22,7 +25,7 @@ namespace GTA5AddOnCarHelper
 
                 Dictionary<PathDictionary.Node, string> paths = PathDictionary.GetPaths();
 
-                if(paths.Any())
+                if(paths.Any(x => !string.IsNullOrEmpty(x.Value)))
                 {
                     string message = string.Format("The paths that will be used during execution of this program are defined below." +
                         "  To change any of the values, remove the corresponding entry in the [green]{0}[/] file\n\n", PathDictionary.FileName);
@@ -50,21 +53,21 @@ namespace GTA5AddOnCarHelper
                 {
                     try
                     {
-                        if(option is ProgramFunctionBase)
-                            ((ProgramFunctionBase)option).WriteHeaderToConsole();
+                        if(option is AddOnCarHelperFunctionBase)
+                            ((AddOnCarHelperFunctionBase)option).WriteHeaderToConsole();
 
                         option.Function();
                         AnsiConsole.Clear();
                     }
                     catch (Exception e)
                     {
-                        if (e.Message == Constants.Commands.EXIT)
+                        if (e.Message == CustomSpectreConsole.Constants.Commands.EXIT)
                             break;
                         else 
 
                         AnsiConsole.Clear();
 
-                        if (e.Message != Constants.Commands.MENU)
+                        if (e.Message != CustomSpectreConsole.Constants.Commands.MENU)
                             AnsiConsole.Write(string.Format("{0}\n\n", e.Message));
                     }
                 }
@@ -82,7 +85,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(VehicleMetaFileManager.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
             listOptions.Add(DLCListGenerator.Instance);
-            listOptions.Add(new ListOption(Constants.SelectionOptions.Exit, null));
+            listOptions.Add(new ListOption(CustomSpectreConsole.Constants.SelectionOptions.Exit, null));
 
             return listOptions;
         }

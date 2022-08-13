@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CustomSpectreConsole;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,11 +14,24 @@ namespace GTA5AddOnCarHelper
     {
         #region Properties
 
+        [TableColumn]
+        [Protected]
         public string Name { get; set; }
+
+        [TableColumn]
         public string Make { get; set; }
+
+        [TableColumn]
+        [Protected]
         public string Model { get; set; }
+
+        [TableColumn]
         public string Class { get; set; }
+
+        [Protected]
         public string GXT { get; set; }
+
+        [TableColumn]
         public int Price { get; set; }
 
         #endregion

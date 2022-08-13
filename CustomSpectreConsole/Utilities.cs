@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GTA5AddOnCarHelper
+namespace CustomSpectreConsole
 {
     public static class Utilities
     {
@@ -131,6 +131,31 @@ namespace GTA5AddOnCarHelper
             }
 
             return item;
+        }
+
+        #endregion
+
+        #region Public API : Util
+
+        public static string GetHash(string input)
+        {
+            uint hash = CreateHash(input.ToLower());
+            return string.Format("0x{0}", hash.ToString("X8"));
+        }
+
+        public static uint CreateHash(string input)
+        {
+            uint num = 0;
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                num += bytes[i];
+                num += num << 10;
+                num ^= num >> 6;
+            }
+            num += num << 3;
+            num ^= num >> 11;
+            return (num + (num << 15));
         }
 
         #endregion

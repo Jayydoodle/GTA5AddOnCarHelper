@@ -25,13 +25,12 @@ namespace GTA5AddOnCarHelper
         #region Static API
 
         public static int ErrorCount = 0;
+        protected static List<string> ModelNames { get; set; }
 
         public static XElement TryGetNode(XDocument xml, string node)
         {
-            return xml.Descendants(node).FirstOrDefault(x => ModelNames.Any(y => x.Value == y));
+            return xml.Descendants(node).FirstOrDefault();
         }
-
-        protected static List<string> ModelNames { get; set; }
 
         public static void GenerateError(string node, string path)
         {
@@ -71,7 +70,7 @@ namespace GTA5AddOnCarHelper
 
             if (!metaFiles.Any())
             {
-                AnsiConsole.MarkupLine("No [green]" + Constants.Extentions.Meta + "[/] files were found in the specified directory");
+                AnsiConsole.MarkupLine("No [green]" + fileName + Constants.Extentions.Meta + "[/] files were found in the specified directory");
                 ErrorCount++;
             }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CustomSpectreConsole;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace GTA5AddOnCarHelper
 {
-    public class VehicleMetaFileManager : ProgramFunctionBase
+    public class VehicleMetaFileManager : AddOnCarHelperFunctionBase
     {
         #region Properties
 
         public override string DisplayName => nameof(VehicleMetaFileManager).SplitByCase();
         protected override string WorkingDirectoryName => nameof(VehicleMetaFileManager);
 
-        private static readonly Lazy<VehicleMetaFileManager> _instance = new Lazy<VehicleMetaFileManager>(() => new VehicleMetaFileManager());
+        private static readonly Lazy<VehicleMetaFileManager> _instance = new(() => new VehicleMetaFileManager());
         public static VehicleMetaFileManager Instance => _instance.Value;
 
         #endregion
@@ -35,7 +36,6 @@ namespace GTA5AddOnCarHelper
         protected override List<ListOption> GetListOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-
             listOptions.Add(new ListOption("Create Meta File Directory", BuildMetaDirectory));
             listOptions.AddRange(base.GetListOptions());
 
@@ -59,9 +59,7 @@ namespace GTA5AddOnCarHelper
 
                 props.ForEach(prop =>
                 {
-                    VehicleMetaBase obj = prop.GetValue(x) as VehicleMetaBase;
-
-                    if(obj != null)
+                    if (prop.GetValue(x) is VehicleMetaBase obj)
                         obj.XML.Save(Path.Combine(dir.FullName, string.Format("{0}{1}", obj.FileName, Constants.Extentions.Meta)));
                 });
             });
