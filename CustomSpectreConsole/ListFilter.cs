@@ -21,7 +21,7 @@ namespace CustomSpectreConsole
         }
     }
 
-    public abstract class ListFilter<T> : ListFilter
+    public class ListFilter<T> : ListFilter
     {
         #region Properties
 
@@ -31,9 +31,10 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        public ListFilter(string textMatch) : base()
+        public ListFilter(IEnumerable<T> list, string textMatch) : base()
         {
-            TextMatch = textMatch;  
+            TextMatch = textMatch;
+            List = list;
         }
 
         public ListFilter(IEnumerable<T> list) : base()
@@ -46,12 +47,27 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public void AddFilter(string propertyName, object value)
+        public void AddFilters(List<EditOptionChoice> choices)
         {
-            if (!Filters.ContainsKey(propertyName))
-                Filters.Add(propertyName, new List<object>());
+            IEnumerable<EditOptionChoice> currentChoices = choices;
 
-            Filters[propertyName].Add(value);   
+            if (currentChoices == null || !currentChoices.Any())
+                return;
+
+            foreach(EditOptionChoice choice in currentChoices)
+            {
+                if(choice.Value == nameof(OrderBys))
+                {
+                    OrderBys = GetOrderBys();
+                    continue;
+                }
+
+                if (choice.Parent != null)
+                    AddFilter(choice.Parent.Value, choice.Value);
+                else
+                    AddFilter(choice.Value, choice.Value);
+            }
+
         }
 
         public virtual IEnumerable<T> FilterList()
@@ -69,17 +85,25 @@ namespace CustomSpectreConsole
                     filteredList = filteredList.Where(x => pair.Value.Contains(prop.GetValue(x)));
             }
 
-            if (!string.IsNullOrEmpty(TextMatch))
+            if (!string.IsNullOrEmpty(TextMatch) && filteredList != null)
                 filteredList = ApplyTextMatch(filteredList);
 
-            return filteredList;
+            return filteredList ?? new List<T>();
         }
 
         #endregion
 
         #region Protected API
 
-        protected abstract void Prompt(IEnumerable<T> list);
+        protected void AddFilter(string propertyName, object value)
+        {
+            if (!Filters.ContainsKey(propertyName))
+                Filters.Add(propertyName, new List<object>());
+
+            Filters[propertyName].Add(value);
+        }
+
+        protected virtual void Prompt(IEnumerable<T> list) { }
 
         protected virtual IEnumerable<T> ApplyTextMatch(IEnumerable<T> list)
         {

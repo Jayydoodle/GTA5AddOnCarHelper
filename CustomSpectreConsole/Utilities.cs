@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 
 namespace CustomSpectreConsole
@@ -71,7 +73,7 @@ namespace CustomSpectreConsole
             if (!files.Any())
                 return;
 
-            DirectoryInfo archive = dir.CreateSubdirectory(string.Format("Archive__{0}", DateTime.Now.ToString("yyyy-MM-dd__h-mm-ss-tt")));
+            DirectoryInfo archive = dir.CreateSubdirectory(string.Format("_Archive__{0}", DateTime.Now.ToString("yyyy-MM-dd__h-mm-ss-tt")));
             files.ForEach(file =>
             {
                 file.MoveTo(Path.Combine(archive.FullName, file.Name));
@@ -84,6 +86,50 @@ namespace CustomSpectreConsole
         #endregion
 
         #region Public API: Input
+
+        public static Dictionary<string, object> GetEditInput<T>(T item, List<PropertyInfo> props = null)
+        {
+            Dictionary<string, object> enteredValues = new Dictionary<string, object>();
+
+            if (props == null)
+                props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+
+            AnsiConsole.MarkupLine("Press [green]ENTER[/] to skip editing the current field.\n");
+
+            foreach (PropertyInfo prop in props)
+            {
+                if (item != null)
+                {
+                    object currentValue = prop.GetValue(item);
+                    AnsiConsole.WriteLine(string.Format("Current {0}: {1}", prop.Name, currentValue));
+                }
+
+                string input = Utilities.GetInput(string.Format("{0}:", prop.Name));
+
+                bool isNumeric = int.TryParse(input, out int numValue);
+
+                if (isNumeric && prop.PropertyType == typeof(string)
+                    || !isNumeric && prop.PropertyType == typeof(int) && input != string.Empty)
+                {
+                    string message = prop.PropertyType == typeof(string) ? "Input cannot be a number" : "Input must be a number";
+                    AnsiConsole.WriteLine(message);
+                    continue;
+                };
+
+                if (isNumeric && numValue < 0)
+                {
+                    AnsiConsole.WriteLine("Number must be greater than 0");
+                    continue;
+                }
+
+                object value = isNumeric ? numValue : !string.IsNullOrEmpty(input) ? input : null;
+
+                if (value != null)
+                    enteredValues.Add(prop.Name, value);
+            }
+
+            return enteredValues;
+        }
 
         public static string GetInput(string message, Func<string, bool> validator = null)
         {
@@ -106,11 +152,11 @@ namespace CustomSpectreConsole
 
         public static T GetActionApprovalInput<T>(Func<T> function, string message = "Would you like to proceed?")
         {
-            string input = string.Empty;
+            bool confirmed = false;
             T item = default(T);
             int iteration = 0;
 
-            while (!string.Equals(input, "Yes"))
+            while (!confirmed)
             {
                 iteration++;
 
@@ -120,17 +166,22 @@ namespace CustomSpectreConsole
                 item = function();
 
                 AnsiConsole.WriteLine();
-
-                input = AnsiConsole.Prompt(
-                    new SelectionPrompt<string>()
-                    .Title(message)
-                    .AddChoices("Yes", "No")
-                );
+                confirmed = GetConfirmation(message);
 
                 AnsiConsole.WriteLine();
             }
 
             return item;
+        }
+
+        public static bool GetConfirmation(string message)
+        {
+            string input = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                    .Title(message)
+                    .AddChoices("Yes", "No"));
+
+            return input == "Yes";
         }
 
         #endregion

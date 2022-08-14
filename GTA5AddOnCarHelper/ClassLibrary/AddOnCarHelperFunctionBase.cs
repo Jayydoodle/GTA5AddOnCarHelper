@@ -10,11 +10,34 @@ using System.Threading.Tasks;
 namespace GTA5AddOnCarHelper
 {
     public abstract class AddOnCarHelperFunctionBase : ConsoleFunction
+    { }
+
+    public abstract class AddOnCarHelperFunctionBase<T> : AddOnCarHelperFunctionBase
+     where T : new()
     {
         #region Properties
 
-        protected abstract string WorkingDirectoryName { get; }
-        protected DirectoryInfo WorkingDirectory { get; private set; }
+        public override string DisplayName => typeof(T).Name.SplitByCase();
+        protected string WorkingDirectoryName => typeof(T).Name;
+
+        private static readonly Lazy<T> _instance = new Lazy<T>(() => new T());
+        public static T Instance => _instance.Value;
+
+        private DirectoryInfo _workingDirectory;
+        public DirectoryInfo WorkingDirectory 
+        { 
+            get
+            {
+                if (_workingDirectory == null)
+                    _workingDirectory = EnsureWorkingDirectory();
+
+                return _workingDirectory;
+            }
+            private set
+            {
+                _workingDirectory = value;  
+            }
+        }
 
         #endregion
 
@@ -31,10 +54,11 @@ namespace GTA5AddOnCarHelper
 
         private DirectoryInfo EnsureWorkingDirectory()
         {
+            DirectoryInfo mainWorkingDirectory = PathDictionary.GetDirectory(PathDictionary.Node.WorkingDirectoryPath);
+
             if (string.IsNullOrEmpty(WorkingDirectoryName))
                 return null;
 
-            DirectoryInfo mainWorkingDirectory = PathDictionary.GetDirectory(PathDictionary.Node.WorkingDirectoryPath);
             string path = Path.Combine(mainWorkingDirectory.FullName, WorkingDirectoryName);
 
             DirectoryInfo workingDirectory = new DirectoryInfo(path);

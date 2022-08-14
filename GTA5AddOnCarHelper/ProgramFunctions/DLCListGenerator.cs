@@ -9,37 +9,12 @@ using System.Threading.Tasks;
 
 namespace GTA5AddOnCarHelper
 {
-    public sealed class DLCListGenerator : AddOnCarHelperFunctionBase
+    public sealed class DLCListGenerator : AddOnCarHelperFunctionBase<DLCListGenerator>
     {
         #region Constants
 
         private const string OutputFileName = "GTA5_DLCListGenerator.txt";
         private const string InsertFormatString = "<Item>dlcpacks:{0}/{1}/</Item>";
-
-        #endregion
-
-        #region Properties
-
-        public override string DisplayName => nameof(DLCListGenerator).SplitByCase();
-        protected override string WorkingDirectoryName => null;
-
-        private static readonly Lazy<DLCListGenerator> _instance = new Lazy<DLCListGenerator>(() => new DLCListGenerator());
-
-        public static DLCListGenerator Instance
-        {
-            get
-            {
-                return _instance.Value;
-            }
-        }
-
-        #endregion
-
-        #region Constructor
-
-        private DLCListGenerator()
-        {
-        }
 
         #endregion
 
@@ -53,7 +28,7 @@ namespace GTA5AddOnCarHelper
                 "individual folders as they would appear in the mods\\update\\x64\\dlcpacks folder: ";
 
             DirectoryInfo sourceDir = PathDictionary.GetDirectory(PathDictionary.Node.DLCListFilesPath, sourceDirPrompt);
-            DirectoryInfo destDir = PathDictionary.GetDirectory(PathDictionary.Node.WorkingDirectoryPath);
+            DirectoryInfo destDir = WorkingDirectory;
 
             string filePrefix = Utilities.GetActionApprovalInput<string>(GetFilePrefix);
 
@@ -66,6 +41,8 @@ namespace GTA5AddOnCarHelper
                 dlcList.AppendLine(insert);
                 Console.WriteLine(insert);
             });
+
+            Utilities.ArchiveFiles(WorkingDirectory, "*.txt", new List<string>() { OutputFileName });
 
             Utilities.WriteToFile(destDir, OutputFileName, dlcList);
             Utilities.GetInput(string.Format("Press enter to return to the main menu, or enter [bold red]{0}[/] to exit", CustomSpectreConsole.Constants.Commands.EXIT));

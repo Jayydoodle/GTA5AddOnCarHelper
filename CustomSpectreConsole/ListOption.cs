@@ -17,7 +17,7 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        public ListOption()
+        protected ListOption()
         {
         }
 

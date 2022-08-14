@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +29,10 @@ namespace GTA5AddOnCarHelper
         public string Make { get; set; }
         public string GameName { get; set; }
         public string TxDName { get; set; }
+        public string HashOfMake
+        {
+            get { return Utilities.GetHash(Make); }
+        }
 
         public VehicleMetaColor Color { get; set; }
         public VehicleMetaHandling Handling { get; set; }
@@ -37,21 +42,12 @@ namespace GTA5AddOnCarHelper
 
         #region Static API
 
-        private static List<VehicleMeta> _metaFiles;
-        public static List<VehicleMeta> MetaFiles
-        {
-            get
-            {
-                if (_metaFiles == null || !_metaFiles.Any())
-                    _metaFiles = BuildMetaFiles();
-
-                return _metaFiles;
-            }
-        }
-
-        private static List<VehicleMeta> BuildMetaFiles()
+        public static List<VehicleMeta> GetMetaFiles(bool vehicleFilesOnly = true)
         {
             Dictionary<string, VehicleMeta> metaObjects = GetFiles<VehicleMeta>();
+
+            if (vehicleFilesOnly)
+                return metaObjects.Values.ToList();
 
             ModelNames = metaObjects.Keys.ToList();
 
@@ -87,6 +83,7 @@ namespace GTA5AddOnCarHelper
             PrintError(variationObjects.Values, VehicleMetaVariation.ModelNode);
 
             AnsiConsole.MarkupLine("\nError Count: [yellow]{0}[/]", ErrorCount);
+            AnsiConsole.WriteLine();
 
             return metaObjects.Values.ToList();
         }
@@ -95,34 +92,29 @@ namespace GTA5AddOnCarHelper
         {
             foreach (VehicleMetaBase obj in objs)
             {
-                AnsiConsole.MarkupLine("Could not parse the XML from file [red]{0}[/]. It's [red]<{1}>[/] field has a value of [red]{2}[/] which could not be resolved against a vehicle.meta model", obj.SourceFilePath, nodeName, obj.Model);
-                ErrorCount++;
+                GenerateError(string.Format("Could not parse the XML from file [red]{0}[/]. It's [blue]<{1}>[/] attribute has a " +
+                    "value of [green]{2}[/] which could not be resolved against a vehicle.meta model\n", obj.SourceFilePath, nodeName, obj.Model), obj.SourceFilePath);
             }
         }
 
-        public static VehicleMeta Create(string filePath)
+        public static VehicleMeta Create(XMLFile xml)
         {
-            XDocument xml = null;
-
-            try { xml = XDocument.Load(filePath); }
-            catch (Exception) { return null; }
-
-            XElement modelNode = xml.Descendants(ModelNode).FirstOrDefault();
+            XElement modelNode = xml.TryGetNode(ModelNode);
 
             if (modelNode == null)
                 return null;
 
-            XElement txdNode = xml.Descendants(TxdNode).FirstOrDefault();
+            XElement txdNode = xml.TryGetNode(TxdNode);
 
             if (txdNode == null)
                 return null;
 
-            XElement gameNameNode = xml.Descendants(GameNameNode).FirstOrDefault();
+            XElement gameNameNode = xml.TryGetNode(GameNameNode);
 
             if (gameNameNode == null)
                 return null;
 
-            XElement vehicleMakeNameNode = xml.Descendants(VehicleMakeNameNode).FirstOrDefault();
+            XElement vehicleMakeNameNode = xml.TryGetNode(VehicleMakeNameNode);
 
             if (vehicleMakeNameNode == null)
                 return null;

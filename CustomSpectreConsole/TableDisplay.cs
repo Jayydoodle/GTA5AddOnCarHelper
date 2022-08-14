@@ -13,12 +13,13 @@ namespace CustomSpectreConsole
         public static void BuildDisplay<T>(ListFilter<T> filter)
         {
             Table table = new Table();
+            table.Border = TableBorder.Rounded;
             IEnumerable<T> items = filter.FilterList();
 
-            List<PropertyInfo> props = typeof(T).GetProperties().Where(x => x.HasAttribute<TableColumn>()).ToList();
+            List<PropertyInfo> props = typeof(T).GetProperties().Where(x => x.HasAttribute<TableColumnAttribute>()).ToList();
 
             if (!props.Any())
-                throw new Exception(string.Format("Could not build a table display for type '{0}'.  The type does not have any properties that have a [{1}] attribute", typeof(T).Name, nameof(TableColumn)));
+                throw new Exception(string.Format("Could not build a table display for type '{0}'.  The type does not have any properties that have a [{1}] attribute", typeof(T).Name, nameof(TableColumnAttribute)));
 
             props.ForEach(x => table.AddColumn(x.Name.SplitByCase()));
 
@@ -55,8 +56,6 @@ namespace CustomSpectreConsole
                 }
             }
 
-            AnsiConsole.MarkupLine(message.ToString());
-
             foreach (T item in orderedItems)
             {
                 List<string> values = new List<string>();
@@ -66,15 +65,22 @@ namespace CustomSpectreConsole
                     object value = prop.GetValue(item);
 
                     if (value != null)
-                        values.Add(value.ToString());
+                        values.Add(Markup.Escape(value.ToString().Trim()));
                     else
                         values.Add(string.Empty);
                 });
 
-                table.AddRow(values.ToArray());
+                table.AddRow(values.ToArray()).Border = TableBorder.Rounded;
             }
 
             AnsiConsole.Write(table);
+
+            AnsiConsole.Markup("[blue]{0}[/] items returned.  ", orderedItems.Count());
+
+            if (message.Length > 0)
+                AnsiConsole.Markup(message.ToString());
+
+            AnsiConsole.WriteLine();
         }
     }
 }

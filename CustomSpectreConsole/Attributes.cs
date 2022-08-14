@@ -10,13 +10,13 @@ namespace CustomSpectreConsole
     {
     }
 
-    public class TableColumn : Attribute
+    public class TableColumnAttribute : Attribute
     {
         public int DisplayOrder { get; set; }
 
-        public TableColumn() { }
+        public TableColumnAttribute() { }
 
-        public TableColumn(int displayOrder)
+        public TableColumnAttribute(int displayOrder)
         {
             DisplayOrder = displayOrder;
         }

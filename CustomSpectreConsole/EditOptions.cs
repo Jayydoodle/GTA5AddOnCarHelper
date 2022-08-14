@@ -45,10 +45,10 @@ namespace CustomSpectreConsole
             return value;
         }
 
-        public static EditOptions<T> Get(bool allowProtecedEdit = true)
+        public static EditOptions<T> Prompt(bool allowProtecedEdit = false)
         {
             MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
-            prompt.Title = "Select the fields you wish to edit";
+            prompt.Title = "\nSelect the fields you wish to edit";
             prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
             prompt.PageSize = 20;
 
@@ -61,7 +61,7 @@ namespace CustomSpectreConsole
             }
 
             List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
-            choices.ForEach(choice => options.Select(choice.Details.Value));
+            choices.ForEach(choice => options.Select(choice.Value));
 
             return options;
         }
@@ -71,9 +71,18 @@ namespace CustomSpectreConsole
     {
         public EditOptionChoice Parent { get; set; }
         public List<EditOptionChoice> Children { get; set; }
-        public EditOptionChoiceDetails Details { get; set; }
+        private EditOptionChoiceDetails Details { get; set; }
         public bool IsSelected { get; set; }
 
+        public string DisplayName
+        {
+            get { return Details.DisplayName; }
+        }
+
+        public string Value
+        {
+            get { return Details.Value; }
+        }
         public EditOptionChoice(EditOptionChoiceDetails details)
         {
             Details = details;

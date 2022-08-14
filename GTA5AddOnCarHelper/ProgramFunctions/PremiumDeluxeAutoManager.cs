@@ -8,36 +8,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static GTA5AddOnCarHelper.LanguageDictionary;
 using static System.Net.WebRequestMethods;
 
 namespace GTA5AddOnCarHelper
 {
-    public sealed class PremiumDeluxeAutoManager : AddOnCarHelperFunctionBase
+    public sealed class PremiumDeluxeAutoManager : AddOnCarHelperFunctionBase<PremiumDeluxeAutoManager>
     {
-        #region Constants
-
-        private const string DataSourceTypeIni = "Premium Deluxe Ini Files";
-        private const string DataSourceTypeMeta = "Vehicle.meta Files";
-
-        #endregion
-
         #region Properties
 
-        public override string DisplayName => nameof(PremiumDeluxeAutoManager).SplitByCase();
-        protected override string WorkingDirectoryName => nameof(PremiumDeluxeAutoManager);
-
-        private static readonly Lazy<PremiumDeluxeAutoManager> _instance = new Lazy<PremiumDeluxeAutoManager>(() => new PremiumDeluxeAutoManager());
-        public static PremiumDeluxeAutoManager Instance => _instance.Value;
-
         private Dictionary<string, PremiumDeluxeCar> Cars { get; set; }
-
-        #endregion
-
-        #region Constructor
-
-        private PremiumDeluxeAutoManager()
-        {
-        }
 
         #endregion
 
@@ -46,38 +26,48 @@ namespace GTA5AddOnCarHelper
         public override void Run()
         {
             Initialize();
-            Cars = null;
+            Cars = PremiumDeluxeCar.GetFromIniDirectory(WorkingDirectory);
+            bool importMeta = false;
 
-            SelectionPrompt<string> dataSourcePrompt = new SelectionPrompt<string>();
-            dataSourcePrompt.Title = "Select a datasource:";
-            dataSourcePrompt.AddChoices(new string[] { DataSourceTypeMeta, DataSourceTypeIni, CustomSpectreConsole.Constants.SelectionOptions.ReturnToMainMenu });
-
-            while(Cars == null || !Cars.Any())
+            if (Cars.Any())
             {
-                string dataSource = AnsiConsole.Prompt(dataSourcePrompt);
+                AnsiConsole.MarkupLine("Imported [blue]{0}[/] cars from the directory [blue]{1}[/]\n", Cars.Count(), WorkingDirectoryName);
+                string prompt = string.Format("Would you like to check for new [green]{0}[/] files to add to this list?", Constants.FileNames.VehicleMeta + Constants.Extentions.Meta);
 
-                switch(dataSource)
+                importMeta = Utilities.GetConfirmation(prompt);
+
+                if(importMeta)
                 {
-                    case DataSourceTypeMeta:
-                        Cars = PremiumDeluxeCar.GetFromMetaFiles();
-                        break;
-                    case DataSourceTypeIni:
-                        Cars = PremiumDeluxeCar.GetFromIniDirectory(WorkingDirectory);
+                    Dictionary<string, PremiumDeluxeCar> metaCars = PremiumDeluxeCar.GetFromMetaFiles();
+                    int importCount = 0;
 
-                        if (!Cars.Any())
+                    foreach (KeyValuePair<string, PremiumDeluxeCar> pair in metaCars)
+                    {
+                        if (!Cars.ContainsKey(pair.Key))
                         {
-                            string message = string.Format("The directory [green]{0}[/] has no ini files, or the " +
-                                "ini files present in the directory contain invalid data\n", WorkingDirectory.FullName);
-
-                            AnsiConsole.MarkupLine(message);
+                            Cars.Add(pair.Key, pair.Value);
+                            importCount++;
                         }
-                        break;
-                    default:
-                        throw new Exception(CustomSpectreConsole.Constants.Commands.MENU);
+                    }
+
+                    AnsiConsole.MarkupLine("Imported [blue]{0}[/] new cars\n", importCount);
                 }
             }
+            else 
+            {
+                string prompt = String.Format("No valid [blue]{0}[/] files were found in the directory [blue]{1}[/].  " +
+                    "Would you like to import [blue]{2}[/] files?", Constants.Extentions.Ini, WorkingDirectoryName, Constants.FileNames.VehicleMeta + Constants.Extentions.Meta);
 
-            RunProgramLoop();
+                importMeta = Utilities.GetConfirmation(prompt);
+
+                if (!importMeta)
+                    return;
+
+                Cars = PremiumDeluxeCar.GetFromMetaFiles();
+            }
+
+            if (Cars.Any())
+                RunProgramLoop();
         }
 
         #endregion
@@ -92,15 +82,11 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Edit A Car", EditCar));
             listOptions.Add(new ListOption("Edit Cars By Filter", EditCarsByFilter));
             listOptions.Add(new ListOption("Bulk Edit Cars", BulkEditCars));
+            listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
 
             return listOptions;
-        }
-
-        private PremiumDeluxeListFilter GetSelectionFilter()
-        {
-            return new PremiumDeluxeListFilter(Cars.Values);
         }
 
         private PremiumDeluxeListFilter GetPartialMatchFiler()
@@ -110,49 +96,30 @@ namespace GTA5AddOnCarHelper
 
             string input = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
 
-            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(input);
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values, input);
 
             return filter;
         }
 
         private void UpdateCarFields(PremiumDeluxeCar car, List<PropertyInfo> props = null)
         {
+            string oldModel = car.Model;
+
             if (props == null)
                 props = typeof(PremiumDeluxeCar).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
 
-            if(Cars.ContainsKey(car.Model))
-                Cars[car.Model] = null;
+            Dictionary<string, object> enteredValues = Utilities.GetEditInput(car, props);
 
-            AnsiConsole.MarkupLine("Press [green]ENTER[/] to skip editing the current field.\n");
-
-            foreach (PropertyInfo prop in props)
+            foreach(KeyValuePair<string, object> pair in enteredValues)
             {
-                object currentValue = prop.GetValue(car);
+                PropertyInfo prop = props.FirstOrDefault(x => x.Name == pair.Key);
 
-                AnsiConsole.WriteLine(string.Format("Current {0}: {1}", prop.Name, currentValue));
-                string input = Utilities.GetInput(string.Format("{0}:", prop.Name));
-
-                bool isNumeric = int.TryParse(input, out int numValue);
-
-                if(isNumeric && prop.PropertyType == typeof(string)
-                    || !isNumeric && prop.PropertyType == typeof(int) && input != string.Empty)
-                {
-                    string message = prop.PropertyType == typeof(string) ? "Input cannot be a number" : "Input must be a number";
-                    AnsiConsole.WriteLine(message);
-                    continue;
-                };
-
-                if(isNumeric && numValue < 0)
-                {
-                    AnsiConsole.WriteLine("Number must be greater than 0");
-                    continue;
-                }
-
-                object value = isNumeric ? numValue : !string.IsNullOrEmpty(input) ? input : null;
-
-                if (value != null)
-                    prop.SetValue(car, value);
+                if (prop != null)
+                    prop.SetValue(car, pair.Value);
             }
+
+            if (Cars.ContainsKey(oldModel))
+                Cars[oldModel] = null;
 
             Cars[car.Model] = car;
         }
@@ -177,12 +144,13 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            UpdateCarFields(car);
+            EditOptions<PremiumDeluxeCar> options = new EditOptions<PremiumDeluxeCar>();
+            UpdateCarFields(car, options.GetEditableProperties());
         }
 
         private void EditCarsByFilter()
         {
-            EditOptions<PremiumDeluxeCar> options = EditOptions<PremiumDeluxeCar>.Get();
+            EditOptions<PremiumDeluxeCar> options = EditOptions<PremiumDeluxeCar>.Prompt();
             List<PropertyInfo> propsToEdit = options.GetEditableProperties();
 
             PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
@@ -198,9 +166,9 @@ namespace GTA5AddOnCarHelper
         {
             SelectionPrompt<ListOption<PremiumDeluxeListFilter>> prompt = new SelectionPrompt<ListOption<PremiumDeluxeListFilter>>();
             prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
-            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", GetSelectionFilter));
+            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", () => new PremiumDeluxeListFilter(Cars.Values)));
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoices(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, null));
+            prompt.AddChoices(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.CANCEL)));
 
             ListOption<PremiumDeluxeListFilter> selection = AnsiConsole.Prompt(prompt);
             PremiumDeluxeListFilter filter = selection.Function();
@@ -216,36 +184,10 @@ namespace GTA5AddOnCarHelper
 
             TableDisplay.BuildDisplay<PremiumDeluxeCar>(filter);
 
-            EditOptions<PremiumDeluxeCar> options =  EditOptions<PremiumDeluxeCar>.Get(false);
+            EditOptions<PremiumDeluxeCar> options =  EditOptions<PremiumDeluxeCar>.Prompt();
             List<PropertyInfo> propsToEdit = options.GetEditableProperties();
 
-            Dictionary<string, object> enteredValues = new Dictionary<string, object>();
-
-            foreach (PropertyInfo prop in propsToEdit)
-            {
-                string input = Utilities.GetInput(string.Format("{0}:", prop.Name));
-
-                bool isNumeric = int.TryParse(input, out int numValue);
-
-                if (isNumeric && prop.PropertyType == typeof(string)
-                    || !isNumeric && prop.PropertyType == typeof(int) && input != string.Empty)
-                {
-                    string message = prop.PropertyType == typeof(string) ? "Input cannot be a number" : "Input must be a number";
-                    AnsiConsole.WriteLine(message);
-                    continue;
-                };
-
-                if (isNumeric && numValue < 0)
-                {
-                    AnsiConsole.WriteLine("Number must be greater than 0");
-                    continue;
-                }
-
-                object value = isNumeric ? numValue : !string.IsNullOrEmpty(input) ? input : null;
-
-                if (value != null)
-                    enteredValues.Add(prop.Name, value);
-            }
+            Dictionary<string, object> enteredValues = Utilities.GetEditInput<PremiumDeluxeCar>(null, propsToEdit);
 
             if (!enteredValues.Any())
                 return;
@@ -273,6 +215,33 @@ namespace GTA5AddOnCarHelper
                 }
 
                 Cars[car.Model] = car;
+            }
+        }
+
+        private void UpdateNamesFromLanguageFiles()
+        {
+            Dictionary<string, LanguageEntry> languageDictionary = LanguageDictionary.GetEntries();
+
+            bool proceed = Utilities.GetConfirmation("This action will attempt to map the name of all cars in " +
+                "the current list to their corresponding entry in the available language files (if one exists).  Would you like to proceed?");
+
+            if (!proceed)
+                return;
+
+            int successCount = 0;
+
+            foreach(KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
+            {
+                PremiumDeluxeCar car = pair.Value;
+                string hash = Utilities.GetHash(car.Model);
+                languageDictionary.TryGetValue(hash, out LanguageEntry entry);
+
+                if (entry != null && !string.IsNullOrEmpty(entry.CurrentValue) && entry.CurrentValue != car.Name)
+                {
+                    AnsiConsole.MarkupLine("[yellow]Model:[/] {0}\n[blue]Previous Name:[/] {1}\n[green]New Name:[/] {2}\n", car.Model, car.Name, entry.CurrentValue);
+                    car.Name = entry.CurrentValue;
+                    successCount++;
+                }
             }
         }
 
@@ -306,7 +275,7 @@ namespace GTA5AddOnCarHelper
             {
             }
 
-            public PremiumDeluxeListFilter(string textMatch) : base(textMatch)
+            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list, string textMatch) : base(list, textMatch)
             {
             }
 
@@ -317,13 +286,16 @@ namespace GTA5AddOnCarHelper
 
             protected override void Prompt(IEnumerable<PremiumDeluxeCar> cars)
             {
+                if (cars == null)
+                    return;
+
                 MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
                 prompt.Title = "Select the options you wish to use to filter the list of cars";
                 prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(PremiumDeluxeListFilter.OrderBys)));
+                prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                            .OrderBy(x => x).Distinct().ToList();
@@ -346,21 +318,7 @@ namespace GTA5AddOnCarHelper
                 }
 
                 List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
-
-                IEnumerable<EditOptionChoice> classfilterChildren = choices.Where(x => x.Parent != null)
-                                                                .Where(x => x.Parent.Details.Value == nameof(PremiumDeluxeCar.Class));
-
-                IEnumerable<EditOptionChoice> makeFilterChildren = choices.Where(x => x.Parent != null)
-                                                                .Where(x => x.Parent.Details.Value == nameof(PremiumDeluxeCar.Make));
-
-                foreach (EditOptionChoice child in classfilterChildren)
-                    AddFilter(nameof(PremiumDeluxeCar.Class), child.Details.Value);
-
-                foreach (EditOptionChoice child in makeFilterChildren)
-                    AddFilter(nameof(PremiumDeluxeCar.Make), child.Details.Value);
-
-                if (choices.Any(x => x.Details.Value == nameof(PremiumDeluxeListFilter.OrderBys)))
-                    OrderBys = GetOrderBys();
+                AddFilters(choices);
             }
         }
 

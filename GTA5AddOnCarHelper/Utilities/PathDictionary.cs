@@ -95,6 +95,11 @@ namespace GTA5AddOnCarHelper
             xml.Save(FileName);
         }
 
+        public static bool HasEntry(Node node)
+        {
+            return !string.IsNullOrEmpty(GetPath(node));    
+        }
+
         #endregion
 
         #region Private API
@@ -127,7 +132,8 @@ namespace GTA5AddOnCarHelper
         {
             WorkingDirectoryPath,
             DLCListFilesPath,
-            VehicleMetaFilesPath
+            VehicleMetaFilesPath,
+            LanguageFilesPath
         }
 
         #endregion

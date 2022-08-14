@@ -11,37 +11,50 @@ namespace GTA5AddOnCarHelper
 {
     public static class LanguageDictionary
     {
-        #region Properties
-
-        private static readonly Lazy<Dictionary<string, string>> _instance = new Lazy<Dictionary<string, string>>(() => Create());
-        public static Dictionary<string, string> Instance => _instance.Value;
-        public static Dictionary<string, List<string>> DuplicateValues { get; private set; }
-
-        #endregion
-
         #region Public API
 
-        public static void PrintToConsole()
+        public static Dictionary<string, LanguageEntry> GetEntries()
         {
-            List<LanguageEntry> entries = new List<LanguageEntry>();
-
-            foreach(string key in Instance.Keys)
-            {
-                LanguageEntry entry = new LanguageEntry(key);
-            }
-        }
-
-        #endregion
-
-        #region Private API
-
-        private static Dictionary<string, string> Create()
-        {
-            Dictionary<string, string> dict = new Dictionary<string, string>();
+            Dictionary<string, string> values = new Dictionary<string, string>();
             List<KeyValuePair<string, string>> duplicates = new List<KeyValuePair<string, string>>();
 
-            DirectoryInfo dir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleMetaFilesPath);
-            List<FileInfo> files = dir.GetFiles("*" + Constants.Extentions.Gxt2).ToList();
+            bool mergeFiles = false;
+
+            if (LanguageGenerator.Instance.WorkingDirectory != null)
+            {
+                FileInfo sourceFile = LanguageGenerator.Instance.WorkingDirectory.GetFiles(LanguageGenerator.OutputFileName).FirstOrDefault();
+
+                if(sourceFile != null)
+                {
+                    IEnumerable<string> items = File.ReadLines(sourceFile.FullName);
+
+                    foreach(string item in items)
+                    {
+                        string[] split = item.Split("=", StringSplitOptions.RemoveEmptyEntries);
+
+                        if (split.Length != 2)
+                            continue;
+
+                        values.Add(split[0].Trim(), split[1].Trim());
+                    }
+                }
+
+                if (values.Any()) 
+                {
+                    mergeFiles = Utilities.GetConfirmation(String.Format("A previously processed language dictionary was found in the directory [green]{0}[/].  " +
+                        "Would you like to check for any new entries to be merged with this file?", LanguageGenerator.Instance.WorkingDirectory.FullName));
+                }
+            }
+
+            List<FileInfo> files = new List<FileInfo>();
+
+            if (!values.Any() || mergeFiles)
+            {
+                string prompt = "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
+                DirectoryInfo dir = PathDictionary.GetDirectory(PathDictionary.Node.LanguageFilesPath, prompt);
+
+                files = dir.GetFiles("*" + Constants.Extentions.Gxt2).ToList();
+            }
 
             files.ForEach(x =>
             {
@@ -52,52 +65,70 @@ namespace GTA5AddOnCarHelper
                     string key = data.Key.ToString("X8");
                     string value = Encoding.UTF8.GetString(data.Value);
 
-                    if (!dict.ContainsKey(key))
-                        dict.Add(key, value);
+                    if (!values.ContainsKey(key))
+                        values.Add(key, value);
                     else
                         duplicates.Add(new KeyValuePair<string, string>(key, value));
                 }
             });
 
-            DuplicateValues = new Dictionary<string, List<string>>();
+            Dictionary<string, List<string>> duplicateValues = new Dictionary<string, List<string>>();
 
             foreach (KeyValuePair<string, string> dupe in duplicates)
             {
-                string currentValue = dict[dupe.Key];
+                string currentValue = values[dupe.Key];
 
                 if (!string.Equals(currentValue, dupe.Value))
                 {
-                    if(!DuplicateValues.ContainsKey(dupe.Key))
-                        DuplicateValues.Add(dupe.Key, new List<string>());
+                    if(!duplicateValues.ContainsKey(dupe.Key))
+                        duplicateValues.Add(dupe.Key, new List<string>());
 
-                    List<string> dupeList = DuplicateValues[dupe.Key];
+                    List<string> dupeList = duplicateValues[dupe.Key];
 
                     if (!dupeList.Contains(dupe.Value))
                         dupeList.Add(dupe.Value);
                 }
             }
 
-            return dict;
+            Dictionary<string, LanguageEntry> entries = new Dictionary<string, LanguageEntry>();
+
+            foreach (KeyValuePair<string, string> item in values)
+            {
+                LanguageEntry entry = new LanguageEntry(item, duplicateValues);
+
+                if (!entries.ContainsKey(entry.Hash))
+                    entries.Add(entry.Hash, entry);
+            }
+
+            return entries;
         }
 
         #endregion
 
         #region Helper Classes
 
-        private class LanguageEntry
+        public class LanguageEntry
         {
+            [TableColumn]
             public string Hash { get; set; }
+            [TableColumn]
             public string CurrentValue { get; set; }
-            public List<string> OtherValuesFound { get; private set; }
+            [TableColumn]
+            public string OtherValuesFound { get; set; }
+            public List<string> OtherValues { get; private set; }
 
-            public LanguageEntry(string hash)
+            public LanguageEntry(KeyValuePair<string, string> item, Dictionary<string, List<string>> duplicateValues)
             {
-                Hash = hash;
-                CurrentValue = LanguageDictionary.Instance[hash];
+                Hash = item.Key.StartsWith("0x") ? item.Key : string.Format("0x{0}", item.Key);
+                CurrentValue = item.Value;
 
                 List<string> otherValues = new List<string>();
-                DuplicateValues.TryGetValue(hash, out otherValues);
-                OtherValuesFound = otherValues;
+
+                duplicateValues.TryGetValue(item.Key, out otherValues);
+                OtherValues = otherValues;
+
+                if (OtherValues != null && OtherValues.Any())
+                    OtherValuesFound = String.Join(",", OtherValues);
             }
         }
 

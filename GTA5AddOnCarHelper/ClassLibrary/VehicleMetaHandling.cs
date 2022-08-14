@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CustomSpectreConsole;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,18 +24,13 @@ namespace GTA5AddOnCarHelper
 
         #region Static API
 
-        public static VehicleMetaHandling Create(string filePath)
+        public static VehicleMetaHandling Create(XMLFile xml)
         {
-            XDocument xml = null;
-
-            try { xml = XDocument.Load(filePath); }
-            catch (Exception) { return null; }
-
-            XElement modelNode = TryGetNode(xml, ModelNode);
+            XElement modelNode = xml.TryGetNode(ModelNode);
 
             if (modelNode == null)
             {
-                GenerateError(ModelNode, filePath);
+                GenerateMissingAttributeError(ModelNode, xml.SourceFileName);
                 return null;
             }
 

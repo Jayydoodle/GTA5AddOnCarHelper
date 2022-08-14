@@ -14,24 +14,23 @@ namespace GTA5AddOnCarHelper
     {
         #region Properties
 
-        [TableColumn]
-        [Protected]
+        [TableColumnAttribute]
         public string Name { get; set; }
 
-        [TableColumn]
+        [TableColumnAttribute]
         public string Make { get; set; }
 
-        [TableColumn]
+        [TableColumnAttribute]
         [Protected]
         public string Model { get; set; }
 
-        [TableColumn]
+        [TableColumnAttribute]
         public string Class { get; set; }
 
         [Protected]
         public string GXT { get; set; }
 
-        [TableColumn]
+        [TableColumnAttribute]
         public int Price { get; set; }
 
         #endregion
@@ -49,6 +48,12 @@ namespace GTA5AddOnCarHelper
 
             typeof(PremiumDeluxeCar)
             .GetProperties(BindingFlags.Public|BindingFlags.Instance)
+            .Where(x => x.Name != nameof(Class))
+            .OrderByDescending(x => x.Name == nameof(Name))
+            .ThenByDescending(x => x.Name == nameof(Price))
+            .ThenByDescending(x => x.Name == nameof(Model))
+            .ThenByDescending(x => x.Name == nameof(GXT))
+            .ThenByDescending(x => x.Name == nameof(Make))
             .ToList()
             .ForEach(prop => 
             {
@@ -67,7 +72,7 @@ namespace GTA5AddOnCarHelper
         {
             Dictionary<string, PremiumDeluxeCar> cars = new Dictionary<string, PremiumDeluxeCar>();
 
-            VehicleMeta.MetaFiles.ForEach(x => {
+            VehicleMeta.GetMetaFiles().ForEach(x => {
 
                 PremiumDeluxeCar car = CreateFromMeta(x);
 

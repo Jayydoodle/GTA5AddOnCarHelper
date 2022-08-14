@@ -9,18 +9,8 @@ using System.Threading.Tasks;
 
 namespace GTA5AddOnCarHelper
 {
-    public class VehicleMetaFileManager : AddOnCarHelperFunctionBase
+    public sealed class VehicleMetaFileManager : AddOnCarHelperFunctionBase<VehicleMetaFileManager>    
     {
-        #region Properties
-
-        public override string DisplayName => nameof(VehicleMetaFileManager).SplitByCase();
-        protected override string WorkingDirectoryName => nameof(VehicleMetaFileManager);
-
-        private static readonly Lazy<VehicleMetaFileManager> _instance = new(() => new VehicleMetaFileManager());
-        public static VehicleMetaFileManager Instance => _instance.Value;
-
-        #endregion
-
         #region Public API
 
         public override void Run()
@@ -52,7 +42,7 @@ namespace GTA5AddOnCarHelper
                                         .Where(x => x.PropertyType.IsSubclassOf(typeof(VehicleMetaBase)))
                                         .ToList();
 
-            VehicleMeta.MetaFiles.ForEach(x =>
+            VehicleMeta.GetMetaFiles(false).ForEach(x =>
             {
                 DirectoryInfo dir = WorkingDirectory.CreateSubdirectory(x.Model);
                 x.XML.Save(Path.Combine(dir.FullName, string.Format("{0}{1}", x.FileName, Constants.Extentions.Meta)));

@@ -12,11 +12,11 @@ namespace GTA5AddOnCarHelper
     {
         static void Main(string[] args)
         {
+            System.Console.OutputEncoding = Encoding.UTF8;
+
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
             prompt.Title = "Select an option:";
             prompt.AddChoices(CreateListOptions());
-
-            LanguageDictionary.Instance.Clear();
 
             while(true)
             {
@@ -83,6 +83,7 @@ namespace GTA5AddOnCarHelper
             List<ListOption> listOptions = new List<ListOption>();
 
             listOptions.Add(VehicleMetaFileManager.Instance);
+            listOptions.Add(LanguageGenerator.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
             listOptions.Add(DLCListGenerator.Instance);
             listOptions.Add(new ListOption(CustomSpectreConsole.Constants.SelectionOptions.Exit, null));

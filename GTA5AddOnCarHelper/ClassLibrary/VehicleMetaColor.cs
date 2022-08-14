@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,18 +25,13 @@ namespace GTA5AddOnCarHelper
 
         #region Static API
 
-        public static VehicleMetaColor Create(string filePath)
+        public static VehicleMetaColor Create(XMLFile xml)
         {
-            XDocument xml = null;
-
-            try { xml = XDocument.Load(filePath); }
-            catch (Exception) { return null; }
-
-            XElement modelNode = TryGetNode(xml, ModelNode);
+            XElement modelNode = xml.TryGetNode(ModelNode);
 
             if (modelNode == null)
             {
-                GenerateError(ModelNode, filePath);
+                GenerateMissingAttributeError(ModelNode, xml.SourceFileName);
                 return null;
             }
 

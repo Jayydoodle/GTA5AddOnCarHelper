@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,9 +17,13 @@ namespace GTA5AddOnCarHelper
         #region Properties
 
         public string Model { get; set; }
-        public XDocument XML { get; set; }
+        public XMLFile XML { get; set; }
         public abstract string FileName { get; }
         public string SourceFilePath { get; set; }
+        public string HashOfModel
+        {
+            get { return Utilities.GetHash(Model); }
+        }
 
         #endregion
 
@@ -27,14 +32,15 @@ namespace GTA5AddOnCarHelper
         public static int ErrorCount = 0;
         protected static List<string> ModelNames { get; set; }
 
-        public static XElement TryGetNode(XDocument xml, string node)
+        public static  void GenerateError(string message, string fileName)
         {
-            return xml.Descendants(node).FirstOrDefault();
+            AnsiConsole.MarkupLine(message);
+            ErrorCount++;
         }
 
-        public static void GenerateError(string node, string path)
+        public static void GenerateMissingAttributeError(string node, string path)
         {
-            AnsiConsole.MarkupLine("Could not parse the XML from file [red]{0}[/].  It is missing a [red]<{1}>[/] attribute", path, node);
+            AnsiConsole.MarkupLine("Could not parse the XML from file [red]{0}[/].  It is missing a [blue]<{1}>[/] attribute\n", path, node);
             ErrorCount++;
         }
 
@@ -54,7 +60,13 @@ namespace GTA5AddOnCarHelper
                                       .ToList();
             files.ForEach(x =>
             {
-                T meta = T.Create(x.FullName);
+                XMLFile file = XMLFile.Load(x.FullName);
+                T meta = default(T);
+
+                if(file != null)
+                    meta = T.Create(file);
+                else
+                    GenerateError(string.Format("The file [red]{0}[/] could not be processed. An error occurred while trying to read it's XML content.\n", x.FullName), x.FullName);
 
                 if (meta != null && !metaFiles.ContainsKey(meta.Model.ToLower()))
                 {
@@ -63,16 +75,13 @@ namespace GTA5AddOnCarHelper
                 }
                 else if(meta != null && metaFiles.ContainsKey(meta.Model.ToLower()))
                 {
-                    AnsiConsole.MarkupLine("The file [red]{0}[/] could not be processed.  A file with a duplicate identifier [red]{1}[/] has already been added to the list.", x.FullName, meta.Model.ToLower());
-                    ErrorCount++;
+                    GenerateError(string.Format("The file [red]{0}[/] could not be processed.  A file with a duplicate identifier " +
+                        "[orange1]{1}[/] has already been added to the list.\n", x.FullName, meta.Model.ToLower()), x.FullName);
                 }
             });
 
             if (!metaFiles.Any())
-            {
                 AnsiConsole.MarkupLine("No [green]" + fileName + Constants.Extentions.Meta + "[/] files were found in the specified directory");
-                ErrorCount++;
-            }
 
             return metaFiles;
         }
@@ -86,6 +95,6 @@ namespace GTA5AddOnCarHelper
         public string Model { get; }
         public string FileName { get; }
         public string SourceFilePath { get; set; }
-        public static abstract T Create(string path);
+        public static abstract T Create(XMLFile file);
     }
 }

@@ -76,7 +76,7 @@ namespace CustomSpectreConsole
         protected virtual List<ListOption> GetListOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption(Constants.SelectionOptions.ReturnToMainMenu, null));
+            listOptions.Add(new ListOption(Constants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.MENU)));
 
             return listOptions;
         }
