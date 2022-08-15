@@ -103,7 +103,22 @@ namespace CustomSpectreConsole
             Filters[propertyName].Add(value);
         }
 
-        protected virtual void Prompt(IEnumerable<T> list) { }
+        protected virtual void Prompt(IEnumerable<T> list) 
+        {
+            if (list == null)
+                return;
+
+            MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+            prompt.Title = "Select the options you wish to use to filter the list";
+            prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
+            prompt.Required = false;
+            prompt.PageSize = 20;
+
+            prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
+
+            List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
+            AddFilters(choices);
+        }
 
         protected virtual IEnumerable<T> ApplyTextMatch(IEnumerable<T> list)
         {
@@ -112,7 +127,7 @@ namespace CustomSpectreConsole
 
         protected List<string> GetOrderBys()
         {
-            IEnumerable<string> availableOrderBys = typeof(T).GetProperties().Select(x => x.Name);
+            IEnumerable<string> availableOrderBys = typeof(T).GetProperties().Where(x => x.HasAttribute<TableColumnAttribute>()).Select(x => x.Name);
 
             string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
 

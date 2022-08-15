@@ -26,13 +26,10 @@ namespace GTA5AddOnCarHelper
 
         public static VehicleMetaVariation Create(XMLFile xml)
         {
-            XElement modelNode = xml.TryGetNode(ModelNode);
+            XElement modelNode = TryGetNode<VehicleMetaVariation>(xml, ModelNode);
 
             if (modelNode == null)
-            {
-                GenerateMissingAttributeError(ModelNode, xml.SourceFileName);
-                return null;
-            }
+                return GenerateMissingAttributeError<VehicleMetaVariation>(ModelNode, xml);
 
             return new VehicleMetaVariation()
             {

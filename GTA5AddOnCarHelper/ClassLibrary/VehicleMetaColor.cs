@@ -27,13 +27,10 @@ namespace GTA5AddOnCarHelper
 
         public static VehicleMetaColor Create(XMLFile xml)
         {
-            XElement modelNode = xml.TryGetNode(ModelNode);
+            XElement modelNode = TryGetNode<VehicleMetaColor>(xml, ModelNode);
 
             if (modelNode == null)
-            {
-                GenerateMissingAttributeError(ModelNode, xml.SourceFileName);
-                return null;
-            }
+                return GenerateMissingAttributeError<VehicleMetaColor>(ModelNode, xml);
 
             return new VehicleMetaColor()
             {

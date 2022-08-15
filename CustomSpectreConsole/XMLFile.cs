@@ -24,9 +24,10 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public XElement TryGetNode(string node)
+        public XElement TryGetNode(string node, Func<XElement, bool> predicate = null)
         {
-            return Document?.Descendants(node).FirstOrDefault();
+            return predicate != null ? Document?.Descendants(node).Where(predicate).FirstOrDefault()
+                                     : Document?.Descendants(node).FirstOrDefault();
         }
 
         public void Save(string path)

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
@@ -74,13 +75,39 @@ namespace CustomSpectreConsole
                 return;
 
             DirectoryInfo archive = dir.CreateSubdirectory(string.Format("_Archive__{0}", DateTime.Now.ToString("yyyy-MM-dd__h-mm-ss-tt")));
-            files.ForEach(file =>
-            {
-                file.MoveTo(Path.Combine(archive.FullName, file.Name));
-            });
 
-            AnsiConsole.MarkupLine("The previous versions of the [red]{0}[/] files in the directory [red]{1}[/] inside the working directory\nhave been archived to [teal]{2}[/]",
+            files.ForEach(file => file.MoveTo(Path.Combine(archive.FullName, file.Name)));
+
+            AnsiConsole.MarkupLine("The previous versions of the [red]{0}[/] files in the directory [red]{1}[/]\nhave been archived to [teal]{2}[/]\n",
                                   searchPattern.Replace("*", string.Empty), dir.Name, archive.Name);
+        }
+
+        public static void ArchiveDirectory(DirectoryInfo sourceDir, DirectoryInfo destinationDir = null, bool zip = false)
+        {
+            List<DirectoryInfo> directories = sourceDir.GetDirectories().Where(x => !(x.Name.StartsWith("_Archive"))).ToList();
+            List<FileInfo> files = sourceDir.GetFiles().Where(x => !(x.Name.StartsWith("_Archive"))).ToList(); 
+
+            if(!directories.Any() && !files.Any())
+                return;
+
+            if (destinationDir == null)
+                destinationDir = sourceDir;
+
+            DirectoryInfo archive = destinationDir.CreateSubdirectory(string.Format("_Archive__{0}", DateTime.Now.ToString("yyyy-MM-dd__h-mm-ss-tt")));
+
+            directories.ForEach(directory => directory.MoveTo(Path.Combine(archive.FullName, directory.Name)));
+            files.ForEach(file => file.MoveTo(Path.Combine(archive.FullName, file.Name)));
+
+            string archiveName = archive.FullName;
+
+            if (zip)
+            {
+                ZipFile.CreateFromDirectory(archive.FullName, string.Format("{0}{1}", archive.FullName, ".zip"));
+                archive.Delete(true);
+                archiveName = string.Format("{0}{1}", archiveName, ".zip");
+            }
+
+            AnsiConsole.MarkupLine("The previous versions of all files in the directory [red]{0}[/]\nhave been archived to [teal]{1}[/]\n", sourceDir.FullName, archiveName);
         }
 
         #endregion

@@ -17,6 +17,7 @@ namespace GTA5AddOnCarHelper
 
         private const string ModelNode = "modelName";
         private const string TxdNode = "txdName";
+        private const string HandlingIdNode = "handlingId";
         private const string GameNameNode = "gameName";
         private const string VehicleMakeNameNode = "vehicleMakeName";
 
@@ -26,9 +27,14 @@ namespace GTA5AddOnCarHelper
 
         public override string FileName => Constants.FileNames.VehicleMeta;
 
+        [TableColumn]
         public string Make { get; set; }
+        [TableColumn]
         public string GameName { get; set; }
+        [TableColumn]
         public string TxDName { get; set; }
+        [TableColumn]
+        public string HandlingId { get; set; }
         public string HashOfMake
         {
             get { return Utilities.GetHash(Make); }
@@ -37,92 +43,44 @@ namespace GTA5AddOnCarHelper
         public VehicleMetaColor Color { get; set; }
         public VehicleMetaHandling Handling { get; set; }
         public VehicleMetaVariation Variation { get; set; }
+        public VehicleMetaLayout Layout { get; set; }
 
         #endregion
 
         #region Static API
 
-        public static List<VehicleMeta> GetMetaFiles(bool vehicleFilesOnly = true)
-        {
-            Dictionary<string, VehicleMeta> metaObjects = GetFiles<VehicleMeta>();
-
-            if (vehicleFilesOnly)
-                return metaObjects.Values.ToList();
-
-            ModelNames = metaObjects.Keys.ToList();
-
-            Dictionary<string, VehicleMetaColor> colorObjects = GetFiles<VehicleMetaColor>();
-            Dictionary<string, VehicleMetaHandling> handlingObjects = GetFiles<VehicleMetaHandling>();
-            Dictionary<string, VehicleMetaVariation> variationObjects = GetFiles<VehicleMetaVariation>();
-
-            foreach(KeyValuePair<string, VehicleMeta> meta in metaObjects)
-            {
-                VehicleMeta v = meta.Value;
-
-                if (colorObjects.ContainsKey(meta.Key))
-                {
-                    v.Color = colorObjects[meta.Key];
-                    colorObjects.Remove(meta.Key);
-                }
-
-                if (handlingObjects.ContainsKey(meta.Key))
-                {
-                    v.Handling = handlingObjects[meta.Key];
-                    handlingObjects.Remove(meta.Key);
-                }
-
-                if (variationObjects.ContainsKey(meta.Key))
-                {
-                    v.Variation = variationObjects[meta.Key];
-                    variationObjects.Remove(meta.Key);
-                }
-            }
-
-            PrintError(colorObjects.Values, VehicleMetaColor.ModelNode);
-            PrintError(handlingObjects.Values, VehicleMetaHandling.ModelNode);
-            PrintError(variationObjects.Values, VehicleMetaVariation.ModelNode);
-
-            AnsiConsole.MarkupLine("\nError Count: [yellow]{0}[/]", ErrorCount);
-            AnsiConsole.WriteLine();
-
-            return metaObjects.Values.ToList();
-        }
-
-        private static void PrintError(IEnumerable<VehicleMetaBase> objs, string nodeName)
-        {
-            foreach (VehicleMetaBase obj in objs)
-            {
-                GenerateError(string.Format("Could not parse the XML from file [red]{0}[/]. It's [blue]<{1}>[/] attribute has a " +
-                    "value of [green]{2}[/] which could not be resolved against a vehicle.meta model\n", obj.SourceFilePath, nodeName, obj.Model), obj.SourceFilePath);
-            }
-        }
-
         public static VehicleMeta Create(XMLFile xml)
         {
-            XElement modelNode = xml.TryGetNode(ModelNode);
+            XElement modelNode = TryGetNode<VehicleMeta>(xml, ModelNode);
 
             if (modelNode == null)
-                return null;
+                return GenerateMissingAttributeError<VehicleMeta>(ModelNode, xml);
 
-            XElement txdNode = xml.TryGetNode(TxdNode);
+            XElement txdNode = TryGetNode<VehicleMeta>(xml, TxdNode);
 
             if (txdNode == null)
-                return null;
+                return GenerateMissingAttributeError<VehicleMeta>(TxdNode, xml);
 
-            XElement gameNameNode = xml.TryGetNode(GameNameNode);
+            XElement handlindIdNode = TryGetNode<VehicleMeta>(xml, HandlingIdNode);
+
+            if (handlindIdNode == null)
+                return GenerateMissingAttributeError<VehicleMeta>(HandlingIdNode, xml);
+
+            XElement gameNameNode = TryGetNode<VehicleMeta>(xml, GameNameNode);
 
             if (gameNameNode == null)
-                return null;
+                return GenerateMissingAttributeError<VehicleMeta>(GameNameNode, xml);
 
-            XElement vehicleMakeNameNode = xml.TryGetNode(VehicleMakeNameNode);
+            XElement vehicleMakeNameNode = TryGetNode<VehicleMeta>(xml, VehicleMakeNameNode);
 
             if (vehicleMakeNameNode == null)
-                return null;
+                return GenerateMissingAttributeError<VehicleMeta>(VehicleMakeNameNode, xml);
 
             return new VehicleMeta()
             {
                 Model = modelNode.Value,
                 TxDName = txdNode.Value,
+                HandlingId = handlindIdNode.Value,  
                 GameName = gameNameNode.Value,
                 Make = vehicleMakeNameNode.Value,
                 XML = xml

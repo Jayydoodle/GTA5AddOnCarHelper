@@ -16,7 +16,6 @@ namespace GTA5AddOnCarHelper
         public static Dictionary<string, LanguageEntry> GetEntries()
         {
             Dictionary<string, string> values = new Dictionary<string, string>();
-            List<KeyValuePair<string, string>> duplicates = new List<KeyValuePair<string, string>>();
 
             bool mergeFiles = false;
 
@@ -47,6 +46,7 @@ namespace GTA5AddOnCarHelper
             }
 
             List<FileInfo> files = new List<FileInfo>();
+            List<KeyValuePair<string, string>> duplicates = new List<KeyValuePair<string, string>>();
 
             if (!values.Any() || mergeFiles)
             {

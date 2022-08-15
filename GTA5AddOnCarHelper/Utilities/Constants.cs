@@ -19,6 +19,7 @@ namespace GTA5AddOnCarHelper
         {
             public const string ColorsMeta = "carcols";
             public const string HandlingMeta = "handling";
+            public const string LayoutsMeta = "vehiclelayouts";
             public const string VehicleMeta = "vehicles";
             public const string VariationsMeta = "carvariations";
         }

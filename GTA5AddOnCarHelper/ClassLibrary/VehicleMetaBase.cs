@@ -12,10 +12,11 @@ using static GTA5AddOnCarHelper.PathDictionary;
 
 namespace GTA5AddOnCarHelper
 {
-    public abstract class VehicleMetaBase
+    public abstract class VehicleMetaBase : IValidatedObject
     {
         #region Properties
 
+        [TableColumn]
         public string Model { get; set; }
         public XMLFile XML { get; set; }
         public abstract string FileName { get; }
@@ -27,70 +28,43 @@ namespace GTA5AddOnCarHelper
 
         #endregion
 
+        #region [IValidatedObject]
+
+        public bool IsValid { get; set; } = true;
+        public string ErrorMessage { get; set; }
+
+        #endregion
+
         #region Static API
 
-        public static int ErrorCount = 0;
-        protected static List<string> ModelNames { get; set; }
-
-        public static  void GenerateError(string message, string fileName)
+        public static XElement TryGetNode<T>(XMLFile xml, string node)
         {
-            AnsiConsole.MarkupLine(message);
-            ErrorCount++;
-        }
-
-        public static void GenerateMissingAttributeError(string node, string path)
-        {
-            AnsiConsole.MarkupLine("Could not parse the XML from file [red]{0}[/].  It is missing a [blue]<{1}>[/] attribute\n", path, node);
-            ErrorCount++;
-        }
-
-        public static Dictionary<string, T> GetFiles<T>()
-        where T : IMetaObject<T>, new()
-        {
-            Dictionary<string, T> metaFiles = new Dictionary<string, T>();
-
-            string prompt = "Enter the directory that contains the [green]"+ Constants.Extentions.Meta +"[/] files: ";
-            DirectoryInfo dir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleMetaFilesPath, prompt);
-            string fileName = new T().FileName;
-
-            string regexFormat = string.Format("{0}{1}|((:?^|\\s){0}[\\(])", fileName, Constants.Extentions.Meta);
-
-            List<FileInfo> files = dir.GetFiles("*" + Constants.Extentions.Meta, SearchOption.AllDirectories)
-                                      .Where(x => Regex.Match(x.Name, regexFormat).Success)
-                                      .ToList();
-            files.ForEach(x =>
+            if (typeof(T) == typeof(VehicleMeta))
             {
-                XMLFile file = XMLFile.Load(x.FullName);
-                T meta = default(T);
+                return xml.TryGetNode(node);
+            }
+            else 
+            {
+                return xml.TryGetNode(node, x => !string.IsNullOrEmpty(x.Value) && VehicleMetaFileManager.Instance.ModelNames.Any(y => x.Value.Contains(y, StringComparison.OrdinalIgnoreCase)));
+            }
+        }
 
-                if(file != null)
-                    meta = T.Create(file);
-                else
-                    GenerateError(string.Format("The file [red]{0}[/] could not be processed. An error occurred while trying to read it's XML content.\n", x.FullName), x.FullName);
+        public static T GenerateMissingAttributeError<T>(string node, XMLFile xml)
+        where T : VehicleMetaBase, new()
+        {
+            T item = new T();
+            item.XML = xml;
+            item.IsValid = false;
+            item.ErrorMessage = string.Format("Could not parse the XML from file [red]{0}[/].  It is missing a [blue]<{1}>[/] attribute\n", xml.SourceFileName, node);
 
-                if (meta != null && !metaFiles.ContainsKey(meta.Model.ToLower()))
-                {
-                    meta.SourceFilePath = x.FullName;
-                    metaFiles.Add(meta.Model.ToLower(), meta);
-                }
-                else if(meta != null && metaFiles.ContainsKey(meta.Model.ToLower()))
-                {
-                    GenerateError(string.Format("The file [red]{0}[/] could not be processed.  A file with a duplicate identifier " +
-                        "[orange1]{1}[/] has already been added to the list.\n", x.FullName, meta.Model.ToLower()), x.FullName);
-                }
-            });
-
-            if (!metaFiles.Any())
-                AnsiConsole.MarkupLine("No [green]" + fileName + Constants.Extentions.Meta + "[/] files were found in the specified directory");
-
-            return metaFiles;
+            return item;
         }
 
         #endregion
     }
 
     public interface IMetaObject<T>
-    where T : new()
+    where T : VehicleMetaBase, new()
     {
         public string Model { get; }
         public string FileName { get; }

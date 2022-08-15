@@ -193,7 +193,7 @@ namespace GTA5AddOnCarHelper
             {
                 var mappings = new Dictionary<string, LanguageMapping>();
                 Dictionary<string, LanguageEntry> languageDictionary = LanguageDictionary.GetEntries();
-                List<VehicleMeta> vehicles = VehicleMeta.GetMetaFiles();
+                List<VehicleMeta> vehicles = VehicleMetaFileManager.Instance.GetMetaFiles();
 
                 vehicles.ForEach(x =>
                 {

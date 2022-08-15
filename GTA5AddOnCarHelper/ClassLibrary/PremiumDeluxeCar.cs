@@ -72,7 +72,7 @@ namespace GTA5AddOnCarHelper
         {
             Dictionary<string, PremiumDeluxeCar> cars = new Dictionary<string, PremiumDeluxeCar>();
 
-            VehicleMeta.GetMetaFiles().ForEach(x => {
+            VehicleMetaFileManager.Instance.GetMetaFiles().ForEach(x => {
 
                 PremiumDeluxeCar car = CreateFromMeta(x);
 
