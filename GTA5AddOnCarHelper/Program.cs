@@ -10,6 +10,8 @@ namespace GTA5AddOnCarHelper
 {
     class Program
     {
+        private const string VersionNumber = "2.1";
+
         static void Main(string[] args)
         {
             System.Console.OutputEncoding = Encoding.UTF8;
@@ -20,7 +22,7 @@ namespace GTA5AddOnCarHelper
 
             while(true)
             {
-                Rule rule = new Rule("[green]GTA 5 AddOn Car Helper[/]\n").DoubleBorder<Rule>();
+                Rule rule = new Rule(string.Format("[green]GTA 5 AddOn Car Helper v{0}[/]\n", VersionNumber)).DoubleBorder<Rule>();
                 AnsiConsole.Write(rule);
 
                 Dictionary<PathDictionary.Node, string> paths = PathDictionary.GetPaths();
