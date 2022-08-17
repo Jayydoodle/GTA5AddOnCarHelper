@@ -211,7 +211,9 @@ namespace GTA5AddOnCarHelper
                 foreach (PropertyInfo prop in propsToEdit)
                 {
                     enteredValues.TryGetValue(prop.Name, out object value);
-                    prop.SetValue(car, value);
+
+                    if (value != null)
+                        prop.SetValue(car, value);
                 }
 
                 Cars[car.Model] = car;

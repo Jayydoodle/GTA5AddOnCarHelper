@@ -11,8 +11,14 @@ namespace CustomSpectreConsole
 {
     public class EditOptions<T>
     {
+        #region Properties
+
         private bool AllowProtectedEdit { get; set; }
         private Dictionary<string, bool> MemberValues { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public EditOptions(bool allowProtectedEdit = false)
         {
@@ -28,6 +34,10 @@ namespace CustomSpectreConsole
             props.Select(x => x.Name).ToList().ForEach(x => MemberValues.Add(x, false));
         }
 
+        #endregion
+
+        #region Public API
+
         public void Select(string member)
         {
             if (MemberValues.ContainsKey(member))
@@ -36,7 +46,7 @@ namespace CustomSpectreConsole
 
         public List<PropertyInfo> GetEditableProperties()
         {
-            return typeof(T).GetProperties().Where(x => MemberValues.Keys.Contains(x.Name)).ToList();
+            return GetProperties().Where(x => MemberValues[x.Name]).ToList();
         }
 
         public bool GetValue(string member)
@@ -54,7 +64,7 @@ namespace CustomSpectreConsole
 
             EditOptions<T> options = new EditOptions<T>(allowProtecedEdit);
 
-            foreach (PropertyInfo prop in options.GetEditableProperties())
+            foreach (PropertyInfo prop in options.GetProperties())
             {
                 EditOptionChoice choice = new EditOptionChoice(prop.Name.SplitByCase(), prop.Name);
                 prompt.AddChoice(choice).Select();
@@ -65,10 +75,23 @@ namespace CustomSpectreConsole
 
             return options;
         }
+
+        #endregion
+
+        #region Private API
+
+        private List<PropertyInfo> GetProperties()
+        {
+            return typeof(T).GetProperties().Where(x => MemberValues.Keys.Contains(x.Name)).ToList();
+        }
+
+        #endregion
     }
 
     public class EditOptionChoice : IMultiSelectionItem<EditOptionChoiceDetails>
     {
+        #region Properties
+
         public EditOptionChoice Parent { get; set; }
         public List<EditOptionChoice> Children { get; set; }
         private EditOptionChoiceDetails Details { get; set; }
@@ -83,6 +106,11 @@ namespace CustomSpectreConsole
         {
             get { return Details.Value; }
         }
+
+        #endregion
+
+        #region Constructor
+
         public EditOptionChoice(EditOptionChoiceDetails details)
         {
             Details = details;
@@ -92,6 +120,10 @@ namespace CustomSpectreConsole
         {
             Details = new EditOptionChoiceDetails(displayName, value);
         }
+
+        #endregion
+
+        #region Public API
 
         public ISelectionItem<EditOptionChoiceDetails> AddChild(string displayName, string value)
         {
@@ -126,17 +158,27 @@ namespace CustomSpectreConsole
         {
             return Details.DisplayName;
         }
+
+        #endregion
     }
 
     public class EditOptionChoiceDetails
     {
+        #region Properties
+
         public string DisplayName { get; set; }
         public string Value { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public EditOptionChoiceDetails(string displayName, string value)
         {
             DisplayName = displayName;
             Value = value;
         }
+
+        #endregion
     }
 }
