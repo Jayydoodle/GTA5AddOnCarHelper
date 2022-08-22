@@ -174,7 +174,7 @@ namespace CustomSpectreConsole
             if (command == Constants.Commands.MENU || command == Constants.Commands.EXIT || command == Constants.Commands.CANCEL)
                 throw new Exception(command);
 
-            return value;
+            return value.Trim();
         }
 
         public static T GetActionApprovalInput<T>(Func<T> function, string message = "Would you like to proceed?")

@@ -20,7 +20,7 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        public EditOptions(bool allowProtectedEdit = false)
+        public EditOptions(bool defaultValue = true, bool allowProtectedEdit = false)
         {
             MemberValues = new Dictionary<string, bool>();
             AllowProtectedEdit = allowProtectedEdit;
@@ -31,7 +31,7 @@ namespace CustomSpectreConsole
             if (!allowProtectedEdit)
                 props = props.Where(x => !x.HasAttribute<ProtectedAttribute>());
 
-            props.Select(x => x.Name).ToList().ForEach(x => MemberValues.Add(x, false));
+            props.Select(x => x.Name).ToList().ForEach(x => MemberValues.Add(x, defaultValue));
         }
 
         #endregion
@@ -62,7 +62,7 @@ namespace CustomSpectreConsole
             prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
             prompt.PageSize = 20;
 
-            EditOptions<T> options = new EditOptions<T>(allowProtecedEdit);
+            EditOptions<T> options = new EditOptions<T>(false, allowProtecedEdit);
 
             foreach (PropertyInfo prop in options.GetProperties())
             {
