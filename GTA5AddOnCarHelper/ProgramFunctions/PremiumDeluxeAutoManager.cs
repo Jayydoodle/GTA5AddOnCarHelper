@@ -252,7 +252,7 @@ namespace GTA5AddOnCarHelper
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
                                                                      .ToDictionary(x => x.Key, x => x.OrderBy(y => y.Model).ToList());
 
-            Utilities.ArchiveFiles(WorkingDirectory, "*.ini", carsByClass.Keys.ToList());
+            Utilities.ArchiveFiles(WorkingDirectory, "*" + Constants.Extentions.Ini, carsByClass.Keys.Select(x => x + Constants.Extentions.Ini).ToList());
 
             foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
@@ -263,7 +263,7 @@ namespace GTA5AddOnCarHelper
                     content.AppendLine(car.Save());
                 });
 
-                Utilities.WriteToFile(WorkingDirectory, string.Format("{0}.ini", pair.Key), content);
+                Utilities.WriteToFile(WorkingDirectory, string.Format("{0}{1}", pair.Key, Constants.Extentions.Ini), content);
             };
         }
 
