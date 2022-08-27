@@ -131,8 +131,8 @@ namespace GTA5AddOnCarHelper
         public enum Node
         {
             WorkingDirectoryPath,
-            DLCListFilesPath,
             VehicleMetaFilesPath,
+            VehicleDownloadsPath,
             LanguageFilesPath
         }
 

@@ -84,10 +84,10 @@ namespace GTA5AddOnCarHelper
         {
             List<ListOption> listOptions = new List<ListOption>();
 
+            listOptions.Add(DLCExtractor.Instance);
             listOptions.Add(VehicleMetaFileManager.Instance);
             listOptions.Add(LanguageGenerator.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
-            listOptions.Add(DLCListGenerator.Instance);
             listOptions.Add(new ListOption(CustomSpectreConsole.Constants.SelectionOptions.Exit, null));
 
             return listOptions;

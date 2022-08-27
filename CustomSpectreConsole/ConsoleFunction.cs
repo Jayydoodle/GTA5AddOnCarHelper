@@ -40,6 +40,7 @@ namespace CustomSpectreConsole
         #endregion
 
         #region Protected API
+
         protected void RunProgramLoop()
         {
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();

@@ -24,8 +24,8 @@ namespace GTA5AddOnCarHelper
         public static T Instance => _instance.Value;
 
         private DirectoryInfo _workingDirectory;
-        public DirectoryInfo WorkingDirectory 
-        { 
+        public DirectoryInfo WorkingDirectory
+        {
             get
             {
                 if (_workingDirectory == null)
@@ -35,7 +35,7 @@ namespace GTA5AddOnCarHelper
             }
             private set
             {
-                _workingDirectory = value;  
+                _workingDirectory = value;
             }
         }
 
@@ -48,9 +48,28 @@ namespace GTA5AddOnCarHelper
             WorkingDirectory = EnsureWorkingDirectory();
         }
 
+        protected override List<ListOption> GetListOptions()
+        {
+            List<ListOption> listOptions = new List<ListOption>();
+            listOptions.Add(new ListOption("Open Working Directory", OpenWorkingDirectory));
+            listOptions.AddRange(base.GetListOptions());
+
+            return listOptions;
+        }
+
         #endregion
 
         #region Private API
+
+        private void OpenWorkingDirectory()
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+            {
+                FileName = WorkingDirectory.FullName,
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
 
         private DirectoryInfo EnsureWorkingDirectory()
         {

@@ -24,5 +24,12 @@ namespace CustomSpectreConsole
             public const string ReturnToMenu = "Return To Menu";
             public const string ReturnToMainMenu = "Return To Main Menu";
         }
+
+        public static class FileExtension
+        {
+            public const string Zip = ".zip";
+            public const string Rar = ".rar";
+            public const string SevenZip = ".7z";
+        }
     }
 }

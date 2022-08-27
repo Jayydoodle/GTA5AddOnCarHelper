@@ -168,7 +168,7 @@ namespace GTA5AddOnCarHelper
             prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", () => new PremiumDeluxeListFilter(Cars.Values)));
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoices(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.CANCEL)));
+            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.CANCEL)));
 
             ListOption<PremiumDeluxeListFilter> selection = AnsiConsole.Prompt(prompt);
             PremiumDeluxeListFilter filter = selection.Function();

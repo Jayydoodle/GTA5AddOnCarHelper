@@ -1,4 +1,8 @@
-﻿using Spectre.Console;
+﻿using SharpCompress.Archives;
+using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Common;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
+using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace CustomSpectreConsole
 {
@@ -107,7 +112,113 @@ namespace CustomSpectreConsole
                 archiveName = string.Format("{0}{1}", archiveName, ".zip");
             }
 
-            AnsiConsole.MarkupLine("The previous versions of all files in the directory [red]{0}[/]\nhave been archived to [teal]{1}[/]\n", sourceDir.FullName, archiveName);
+            AnsiConsole.MarkupLine("The previous versions of all files in the directory [orange1]{0}[/]\nhave been archived to [teal]{1}[/]\n", sourceDir.FullName, archiveName);
+        }
+
+        public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+        {
+            var dir = new DirectoryInfo(sourceDir);
+
+            if (!dir.Exists)
+                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+            DirectoryInfo newDir = Directory.CreateDirectory(Path.Combine(destinationDir, dir.Name));
+
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                string targetFilePath = Path.Combine(newDir.FullName, file.Name);
+                file.CopyTo(targetFilePath);
+            }
+
+            if (recursive)
+            {
+                DirectoryInfo[] dirs = dir.GetDirectories();
+
+                foreach (DirectoryInfo subDir in dirs)
+                {
+                    string newDestinationDir = Path.Combine(newDir.FullName, subDir.Name);
+                    CopyDirectory(subDir.FullName, newDestinationDir, true);
+                }
+            }
+        }
+
+        public static void ExtractFile(FileInfo file, string destinationPath, string searchPattern = null)
+        {
+            switch(file.Extension)
+            {
+                case Constants.FileExtension.Zip:
+                    ExtractZipFile(file, destinationPath, searchPattern);
+                    break;
+
+                case Constants.FileExtension.Rar:
+                    ExtractRarFile(file, destinationPath, searchPattern);
+                    break;
+
+                case Constants.FileExtension.SevenZip:
+                    Extract7zFile(file, destinationPath, searchPattern);
+                    break;
+
+                default:
+                    throw new Exception(String.Format("Could not extract file [red]{0}[/].  Unknown extension '[red]{1}[/]'", file.FullName, file.Extension));
+            }
+        }
+
+        #endregion
+
+        #region Private API: File Management
+
+        private static void ExtractZipFile(FileInfo file, string desintationPath, string searchPattern = null)
+        {
+            using (var archive = ZipArchive.Open(file.FullName))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    if (!string.IsNullOrEmpty(searchPattern) && !entry.Key.Contains(searchPattern))
+                        continue;
+
+                    entry.WriteToDirectory(desintationPath, new ExtractionOptions()
+                    {
+                        ExtractFullPath = true,
+                        Overwrite = true
+                    });
+                }
+            }
+        }
+        private static void ExtractRarFile(FileInfo file, string desintationPath, string searchPattern = null)
+        {
+            using (var archive = RarArchive.Open(file.FullName))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    if (!string.IsNullOrEmpty(searchPattern) && !entry.Key.Contains(searchPattern))
+                        continue;
+
+                    entry.WriteToDirectory(desintationPath, new ExtractionOptions()
+                    {
+                        ExtractFullPath = true,
+                        Overwrite = true
+                    });
+                }
+            }
+        }
+
+        private static void Extract7zFile(FileInfo file, string desintationPath, string searchPattern = null)
+        {
+
+            using (var archive = SevenZipArchive.Open(file.FullName))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    if (!string.IsNullOrEmpty(searchPattern) && !entry.Key.Contains(searchPattern))
+                        continue;
+
+                    entry.WriteToDirectory(desintationPath, new ExtractionOptions()
+                    {
+                        ExtractFullPath = true,
+                        Overwrite = true
+                    });
+                }
+            }
         }
 
         #endregion
