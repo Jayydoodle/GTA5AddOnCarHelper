@@ -170,7 +170,7 @@ namespace GTA5AddOnCarHelper
 
         private void ExtractDLCFiles()
         {
-            string sourceDirPrompt = "\nEnter the path to the directory containing all of your car downloads: ";
+            string sourceDirPrompt = "\nEnter the path to the directory containing all of your vehicle downloads: ";
 
             DirectoryInfo sourceDir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleDownloadsPath, sourceDirPrompt);
             DirectoryInfo vehicledir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName));
