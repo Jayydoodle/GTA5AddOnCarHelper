@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CustomSpectreConsole
 {
-    public class Constants
+    public class GlobalConstants
     {
+        public static TextInfo TEXTINFO = new CultureInfo("en-us", false).TextInfo;
+
         public static class Commands
         {
             public const string CANCEL = "CANCEL";
@@ -30,6 +33,11 @@ namespace CustomSpectreConsole
             public const string Zip = ".zip";
             public const string Rar = ".rar";
             public const string SevenZip = ".7z";
+        }
+
+        public static class RegexPattern
+        {
+            public const string AmericanCurrency = "\\$[\\s]?([\\d\\.\\,]+)[\\s]*(thousand|million|billion|trillion)?";
         }
     }
 }

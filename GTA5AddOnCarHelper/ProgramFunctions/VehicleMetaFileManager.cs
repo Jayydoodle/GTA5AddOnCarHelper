@@ -135,7 +135,7 @@ namespace GTA5AddOnCarHelper
             Dictionary<string, T> metaFiles = new Dictionary<string, T>();
 
             string prompt = "Enter the directory that contains the [green]" + Constants.Extentions.Meta + "[/] files: ";
-            DirectoryInfo dir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleMetaFilesPath, prompt);
+            DirectoryInfo dir = Settings.GetDirectory(Settings.Node.VehicleMetaFilesPath, prompt);
             string fileName = new T().FileName;
 
             string regexFormat = string.Format("{0}{1}|((:?^|\\s){0}[\\(])", fileName, Constants.Extentions.Meta);
@@ -216,7 +216,7 @@ namespace GTA5AddOnCarHelper
                 dirCount++;
             });
 
-            DirectoryInfo metaFilesDir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleMetaFilesPath);
+            DirectoryInfo metaFilesDir = Settings.GetDirectory(Settings.Node.VehicleMetaFilesPath);
             AnsiConsole.MarkupLine("A total of [green]{0}[/] directories have been created for each car found in the source directory [green]{1}[/]", dirCount, metaFilesDir.FullName);
 
             if (!ErrorFiles.Any())

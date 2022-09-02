@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using static GTA5AddOnCarHelper.PathDictionary;
+using static GTA5AddOnCarHelper.Settings;
 
 namespace GTA5AddOnCarHelper
 {

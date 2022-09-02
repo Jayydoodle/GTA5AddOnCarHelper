@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using static GTA5AddOnCarHelper.PathDictionary;
+using static GTA5AddOnCarHelper.Settings;
 
 namespace GTA5AddOnCarHelper
 {

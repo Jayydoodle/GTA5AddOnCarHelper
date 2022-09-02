@@ -51,7 +51,7 @@ namespace GTA5AddOnCarHelper
             if (!values.Any() || mergeFiles)
             {
                 string prompt = "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
-                DirectoryInfo dir = PathDictionary.GetDirectory(PathDictionary.Node.LanguageFilesPath, prompt);
+                DirectoryInfo dir = Settings.GetDirectory(Settings.Node.LanguageFilesPath, prompt);
 
                 files = dir.GetFiles("*" + Constants.Extentions.Gxt2).ToList();
             }

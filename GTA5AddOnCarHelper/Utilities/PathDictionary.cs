@@ -3,17 +3,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace GTA5AddOnCarHelper
 {
-    public static class PathDictionary
+    public static class Settings
     {
         #region Constants
 
-        public const string FileName = "paths.xml";
+        public const string FileName = "settings.xml";
 
         private const string DefaultRequiredPrompt = "Enter the directory: ";
         private const string DefaultNotRequiredPrompt = "Enter the directory (if nothing is entered, the current directory will be used): ";
@@ -26,7 +27,7 @@ namespace GTA5AddOnCarHelper
         public static DirectoryInfo GetDirectory(Node node, string prompt = null, bool isRequired = true)
         {
             DirectoryInfo dir = null;
-            string path = GetPath(node);
+            string path = GetValue(node);
 
             if (!string.IsNullOrEmpty(path))
                 dir = new DirectoryInfo(path);
@@ -54,21 +55,33 @@ namespace GTA5AddOnCarHelper
             return dir;
         }
 
-        public static string GetPath(Node node)
+        public static string GetSetting(Node node, string prompt = null)
         {
-            XDocument xml = GetDocument();
-            XElement elem = xml.Root.Element(node.ToString());
+            string value = GetValue(node);
 
-            return elem != null ? elem.Value : null;
+            if (!string.IsNullOrEmpty(value))
+                return value;
+
+            if (string.IsNullOrEmpty(prompt))
+                prompt = string.Format("Enter in a value for the {0}: ", node.ToString().SplitByCase());
+
+            value = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
+            Update(node, value);
+
+            return value;
         }
 
-        public static Dictionary<Node, string> GetPaths()
+        public static Dictionary<Node, string> GetValues(Func<Node, bool> predicate = null)
         {
             Dictionary<Node, string> paths = new Dictionary<Node, string>();
             XDocument xml = GetDocument();
 
-            Enum.GetValues<Node>()
-            .ToList()
+            IEnumerable<Node> nodes = Enum.GetValues<Node>();
+
+            if (predicate != null)
+                nodes = nodes.Where(predicate);
+
+            nodes.ToList()
             .ForEach(x =>
             {
                 XElement elem = xml.Root.Element(x.ToString());
@@ -97,12 +110,20 @@ namespace GTA5AddOnCarHelper
 
         public static bool HasEntry(Node node)
         {
-            return !string.IsNullOrEmpty(GetPath(node));    
+            return !string.IsNullOrEmpty(GetValue(node));    
         }
 
         #endregion
 
         #region Private API
+
+        private static string GetValue(Node node)
+        {
+            XDocument xml = GetDocument();
+            XElement elem = xml.Root.Element(node.ToString());
+
+            return elem != null ? elem.Value : null;
+        }
 
         private static XDocument GetDocument()
         {
@@ -111,7 +132,7 @@ namespace GTA5AddOnCarHelper
             try { xml = XDocument.Load(FileName); }
             catch (Exception)
             {
-                xml = new XDocument(new XElement("Paths"));
+                xml = new XDocument(new XElement("Settings"));
 
                 Enum.GetNames<Node>()
                 .ToList()
@@ -130,6 +151,7 @@ namespace GTA5AddOnCarHelper
 
         public enum Node
         {
+            APIKey,
             WorkingDirectoryPath,
             VehicleMetaFilesPath,
             VehicleDownloadsPath,

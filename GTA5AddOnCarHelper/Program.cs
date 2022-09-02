@@ -25,16 +25,16 @@ namespace GTA5AddOnCarHelper
                 Rule rule = new Rule(string.Format("[green]GTA 5 AddOn Car Helper v{0}[/]\n", VersionNumber)).DoubleBorder<Rule>();
                 AnsiConsole.Write(rule);
 
-                Dictionary<PathDictionary.Node, string> paths = PathDictionary.GetPaths();
+                Dictionary<Settings.Node, string> paths = Settings.GetValues(x => x.ToString().Contains("Path"));
 
                 if(paths.Any(x => !string.IsNullOrEmpty(x.Value)))
                 {
                     string message = string.Format("The paths that will be used during execution of this program are defined below." +
-                        "  To change any of the values, remove the corresponding entry in the [green]{0}[/] file\n\n", PathDictionary.FileName);
+                        "  To change any of the values, remove the corresponding entry in the [green]{0}[/] file\n\n", Settings.FileName);
 
                     AnsiConsole.Markup(message);
 
-                    Enum.GetValues<PathDictionary.Node>()
+                    Enum.GetValues<Settings.Node>()
                     .ToList()
                     .ForEach(x =>
                     {
@@ -63,13 +63,13 @@ namespace GTA5AddOnCarHelper
                     }
                     catch (Exception e)
                     {
-                        if (e.Message == CustomSpectreConsole.Constants.Commands.EXIT)
+                        if (e.Message == GlobalConstants.Commands.EXIT)
                             break;
                         else 
 
                         AnsiConsole.Clear();
 
-                        if (e.Message != CustomSpectreConsole.Constants.Commands.MENU)
+                        if (e.Message != GlobalConstants.Commands.MENU)
                             AnsiConsole.Write(string.Format("{0}\n\n", e.Message));
                     }
                 }
@@ -88,7 +88,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(VehicleMetaFileManager.Instance);
             listOptions.Add(LanguageGenerator.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
-            listOptions.Add(new ListOption(CustomSpectreConsole.Constants.SelectionOptions.Exit, null));
+            listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.Exit, null));
 
             return listOptions;
         }

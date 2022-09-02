@@ -23,7 +23,6 @@ namespace GTA5AddOnCarHelper
 
         #endregion
 
-
         #region Public API
 
         public override void Run()
@@ -65,7 +64,7 @@ namespace GTA5AddOnCarHelper
         {
             List<string> errorMessages = new List<string>();
 
-            DirectoryInfo sourceDir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleDownloadsPath);
+            DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath);
             DirectoryInfo tempDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, TempDirectoryName));
 
             FileInfo[] sourceFiles = sourceDir.GetFiles();
@@ -120,7 +119,7 @@ namespace GTA5AddOnCarHelper
         {
             List<string> errorMessages = new List<string>();
 
-            DirectoryInfo sourceDir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleDownloadsPath);
+            DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath);
             DirectoryInfo tempDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, TempDirectoryName));
 
             DirectoryInfo[] sourceDirs = sourceDir.GetDirectories();
@@ -172,7 +171,7 @@ namespace GTA5AddOnCarHelper
         {
             string sourceDirPrompt = "\nEnter the path to the directory containing all of your vehicle downloads: ";
 
-            DirectoryInfo sourceDir = PathDictionary.GetDirectory(PathDictionary.Node.VehicleDownloadsPath, sourceDirPrompt);
+            DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath, sourceDirPrompt);
             DirectoryInfo vehicledir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName));
 
             if (vehicledir.Exists && vehicledir.GetDirectories().Any()) 
@@ -192,7 +191,7 @@ namespace GTA5AddOnCarHelper
             List<ListOption<List<string>>> options = new List<ListOption<List<string>>>();
             options.Add(new ListOption<List<string>>("Extract from .zip/.rar/.7z files", ExtractFiles));
             options.Add(new ListOption<List<string>>("Extract from already unarchived folders", ExtractDirectories));
-            options.Add(new ListOption<List<string>>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.CANCEL)));
+            options.Add(new ListOption<List<string>>(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
 
             SelectionPrompt<ListOption<List<string>>> prompt = new SelectionPrompt<ListOption<List<string>>>();
             prompt.Title = "Select the type of extraction you want to perform:";

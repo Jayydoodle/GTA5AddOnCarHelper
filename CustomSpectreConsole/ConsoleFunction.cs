@@ -31,9 +31,9 @@ namespace CustomSpectreConsole
             AnsiConsole.Write(rule);
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to return to the main menu.", Constants.Commands.MENU));
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to end the current operation and return to the {1} menu.", Constants.Commands.CANCEL, DisplayName));
-            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to quit.", Constants.Commands.EXIT));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to return to the main menu.", GlobalConstants.Commands.MENU));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to end the current operation and return to the {1} menu.", GlobalConstants.Commands.CANCEL, DisplayName));
+            AnsiConsole.MarkupLine(string.Format("Enter [bold red]{0}[/] at any time to quit.", GlobalConstants.Commands.EXIT));
             AnsiConsole.Write("\n\n");
         }
 
@@ -59,7 +59,7 @@ namespace CustomSpectreConsole
                     }
                     catch (Exception e)
                     {
-                        if (e.Message != Constants.Commands.CANCEL)
+                        if (e.Message != GlobalConstants.Commands.CANCEL)
                             throw;
                         else
                             WriteHeaderToConsole();
@@ -77,7 +77,7 @@ namespace CustomSpectreConsole
         protected virtual List<ListOption> GetListOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption(Constants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.MENU)));
+            listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(GlobalConstants.Commands.MENU)));
 
             return listOptions;
         }

@@ -132,24 +132,24 @@ namespace CustomSpectreConsole
             string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
 
             SelectionPrompt<string> prompt = new SelectionPrompt<string>();
-            prompt.Title = string.Format(promptTitleFormat, "first", CustomSpectreConsole.Constants.SelectionOptions.Continue);
-            prompt.AddChoice(CustomSpectreConsole.Constants.SelectionOptions.Continue);
+            prompt.Title = string.Format(promptTitleFormat, "first", GlobalConstants.SelectionOptions.Continue);
+            prompt.AddChoice(GlobalConstants.SelectionOptions.Continue);
             prompt.AddChoices(availableOrderBys);
 
             List<string> orderBys = new List<string>();
             string selection = null;
 
-            while (selection != CustomSpectreConsole.Constants.SelectionOptions.Continue && availableOrderBys.Any())
+            while (selection != GlobalConstants.SelectionOptions.Continue && availableOrderBys.Any())
             {
                 selection = AnsiConsole.Prompt(prompt);
                 availableOrderBys = availableOrderBys.Where(x => x != selection).ToList();
 
-                if (selection != CustomSpectreConsole.Constants.SelectionOptions.Continue)
+                if (selection != GlobalConstants.SelectionOptions.Continue)
                     orderBys.Add(selection);
 
                 prompt = new SelectionPrompt<string>();
-                prompt.Title = string.Format(promptTitleFormat, "next", CustomSpectreConsole.Constants.SelectionOptions.Continue);
-                prompt.AddChoice(CustomSpectreConsole.Constants.SelectionOptions.Continue);
+                prompt.Title = string.Format(promptTitleFormat, "next", GlobalConstants.SelectionOptions.Continue);
+                prompt.AddChoice(GlobalConstants.SelectionOptions.Continue);
                 prompt.AddChoices(availableOrderBys);
 
                 StringBuilder sb = new StringBuilder();

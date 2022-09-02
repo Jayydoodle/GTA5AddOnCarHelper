@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
+using System.Text.RegularExpressions;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace CustomSpectreConsole
@@ -146,15 +147,15 @@ namespace CustomSpectreConsole
         {
             switch(file.Extension)
             {
-                case Constants.FileExtension.Zip:
+                case GlobalConstants.FileExtension.Zip:
                     ExtractZipFile(file, destinationPath, searchPattern);
                     break;
 
-                case Constants.FileExtension.Rar:
+                case GlobalConstants.FileExtension.Rar:
                     ExtractRarFile(file, destinationPath, searchPattern);
                     break;
 
-                case Constants.FileExtension.SevenZip:
+                case GlobalConstants.FileExtension.SevenZip:
                     Extract7zFile(file, destinationPath, searchPattern);
                     break;
 
@@ -282,7 +283,7 @@ namespace CustomSpectreConsole
 
             string command = value.ToUpper();
 
-            if (command == Constants.Commands.MENU || command == Constants.Commands.EXIT || command == Constants.Commands.CANCEL)
+            if (command == GlobalConstants.Commands.MENU || command == GlobalConstants.Commands.EXIT || command == GlobalConstants.Commands.CANCEL)
                 throw new Exception(command);
 
             return value.Trim();
@@ -299,7 +300,7 @@ namespace CustomSpectreConsole
                 iteration++;
 
                 if (iteration % 2 == 0)
-                    AnsiConsole.MarkupLine(string.Format("[red]Reminder[/]: You may enter [red bold]{0}[/] at any time to return to the menu\n", Constants.Commands.CANCEL));
+                    AnsiConsole.MarkupLine(string.Format("[red]Reminder[/]: You may enter [red bold]{0}[/] at any time to return to the menu\n", GlobalConstants.Commands.CANCEL));
 
                 item = function();
 
@@ -345,6 +346,55 @@ namespace CustomSpectreConsole
             num += num << 3;
             num ^= num >> 11;
             return (num + (num << 15));
+        }
+
+        public static List<int> ParseCurrencyFromText(List<string> results)
+        {
+            IEnumerable<MatchCollection> matches = results.Select(x => Regex.Matches(x, GlobalConstants.RegexPattern.AmericanCurrency, RegexOptions.IgnoreCase));
+
+            List<int> resultGroup = new List<int>();
+
+            foreach (MatchCollection x in matches)
+            {
+                foreach (Match m in x)
+                {
+                    string[] values = m.Value.Split(" ");
+
+                    string parsedAmount = new string(values[0].Where(c => char.IsDigit(c) || c == '.').ToArray());
+
+                    if (parsedAmount.EndsWith('.'))
+                        parsedAmount = parsedAmount + "0";
+
+                    bool couldParse = double.TryParse(parsedAmount, out double parsedValue);
+
+                    if (!couldParse)
+                        continue;
+
+                    if (values.Length == 2)
+                    {
+                        string modifier = new string(values[1].Where(c => char.IsLetter(c)).ToArray());
+
+                        switch (modifier.ToLower())
+                        {
+                            case "thousand":
+                                parsedValue = parsedValue * 1000;
+                                break;
+
+                            case "million":
+                                parsedValue = parsedValue * 1000000;
+                                break;
+
+                            case "billion":
+                                parsedValue = parsedValue * 1000000000;
+                                break;
+                        }
+                    }
+
+                    resultGroup.Add(Convert.ToInt32(parsedValue));
+                }
+            }
+
+            return resultGroup;
         }
 
         #endregion

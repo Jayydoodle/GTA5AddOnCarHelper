@@ -73,7 +73,7 @@ namespace GTA5AddOnCarHelper
 
         private DirectoryInfo EnsureWorkingDirectory()
         {
-            DirectoryInfo mainWorkingDirectory = PathDictionary.GetDirectory(PathDictionary.Node.WorkingDirectoryPath);
+            DirectoryInfo mainWorkingDirectory = Settings.GetDirectory(Settings.Node.WorkingDirectoryPath);
 
             if (string.IsNullOrEmpty(WorkingDirectoryName))
                 return null;

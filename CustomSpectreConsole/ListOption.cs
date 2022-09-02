@@ -44,6 +44,7 @@ namespace CustomSpectreConsole
         #region Properties
 
         public new Func<T> Function { get; set; }
+        public Action<T> Action { get; set; }
 
         #endregion
 
@@ -53,6 +54,12 @@ namespace CustomSpectreConsole
         {
             DisplayName = displayName;
             Function = function;
+        }
+
+        public ListOption(string displayName, Action<T> action)
+        {
+            DisplayName = displayName;
+            Action = action;
         }
 
         #endregion

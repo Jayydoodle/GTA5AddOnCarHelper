@@ -3,10 +3,12 @@ using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static GTA5AddOnCarHelper.LanguageDictionary;
 using static System.Net.WebRequestMethods;
@@ -15,6 +17,12 @@ namespace GTA5AddOnCarHelper
 {
     public sealed class PremiumDeluxeAutoManager : AddOnCarHelperFunctionBase<PremiumDeluxeAutoManager>
     {
+        #region
+
+        private const string PriceGeneratorOutputFileName = "price_generator_search_results.txt";
+
+        #endregion
+
         #region Properties
 
         private Dictionary<string, PremiumDeluxeCar> Cars { get; set; }
@@ -83,6 +91,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Edit Cars By Filter", EditCarsByFilter));
             listOptions.Add(new ListOption("Bulk Edit Cars", BulkEditCars));
             listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
+            listOptions.Add(new ListOption("Get Vehicle Prices From Web Search", GenerateVehiclePrices));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
 
@@ -122,6 +131,37 @@ namespace GTA5AddOnCarHelper
                 Cars[oldModel] = null;
 
             Cars[car.Model] = car;
+        }
+
+        private void AutoCalculateVehiclePrices(Dictionary<string, List<int>> pricesByCar)
+        {
+            string max = "Take the highest value (recommended)";
+            string min = "Take the lowest value";
+            string average = "Take the average of the values";
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = "How would you like to handle the list of prices found for each car?";
+            prompt.AddChoices(new string[] { max, min, average, GlobalConstants.TEXTINFO.ToTitleCase((GlobalConstants.Commands.CANCEL.ToLower())) });
+
+            string choice = AnsiConsole.Prompt(prompt);
+
+            if (choice.ToUpper() == GlobalConstants.Commands.CANCEL)
+                throw new Exception(GlobalConstants.Commands.CANCEL);
+
+            foreach (KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
+            {
+                pricesByCar.TryGetValue(pair.Key, out List<int> prices);
+
+                if (prices == null || !prices.Any())
+                    continue;
+
+                if(choice == max)
+                    pair.Value.Price = prices.Max();
+                else if (choice == min)
+                    pair.Value.Price = prices.Min();
+                else if (choice == average)
+                    pair.Value.Price = (int)prices.Average();
+            }
         }
 
         #endregion
@@ -168,7 +208,7 @@ namespace GTA5AddOnCarHelper
             prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", () => new PremiumDeluxeListFilter(Cars.Values)));
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>(CustomSpectreConsole.Constants.SelectionOptions.ReturnToMenu, () => throw new Exception(CustomSpectreConsole.Constants.Commands.CANCEL)));
+            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
 
             ListOption<PremiumDeluxeListFilter> selection = AnsiConsole.Prompt(prompt);
             PremiumDeluxeListFilter filter = selection.Function();
@@ -200,10 +240,10 @@ namespace GTA5AddOnCarHelper
             string confirmation = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                 .Title("\nWould you like to proceed?")
-                .AddChoices(CustomSpectreConsole.Constants.SelectionOptions.Yes, CustomSpectreConsole.Constants.SelectionOptions.No)
+                .AddChoices(GlobalConstants.SelectionOptions.Yes, GlobalConstants.SelectionOptions.No)
             );
 
-            if (confirmation == CustomSpectreConsole.Constants.SelectionOptions.No)
+            if (confirmation == GlobalConstants.SelectionOptions.No)
                 return;
 
             foreach(PremiumDeluxeCar car in filteredCars)
@@ -245,6 +285,76 @@ namespace GTA5AddOnCarHelper
                     successCount++;
                 }
             }
+        }
+
+        private void GenerateVehiclePrices()
+        {
+            StringBuilder sb = new StringBuilder();
+            Dictionary<string, List<int>> pricesByCar = new Dictionary<string, List<int>>();
+
+            ProgressColumn[] columns = new ProgressColumn[]
+            {
+                new TaskDescriptionColumn(), new ProgressBarColumn(),
+                new PercentageColumn(), new RemainingTimeColumn()
+            };
+
+            AnsiConsole.Progress()
+            .AutoClear(false)
+            .HideCompleted(false)
+            .Columns(columns)
+            .Start(ctx =>
+            {
+                var task = ctx.AddTask("Gathering [blue]G[/][red]o[/][yellow]o[/][blue]g[/][green]l[/][red]e[/] Search Results", true, Cars.Count);
+
+                while (!ctx.IsFinished)
+                {
+                    foreach (KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
+                    {
+                        PremiumDeluxeCar car = pair.Value;
+
+                        if (string.IsNullOrEmpty(car.Make) || string.IsNullOrEmpty(car.Name))
+                        {
+                            task.Increment(1);
+                            ctx.Refresh();
+                            continue;
+                        }
+
+                        string query = string.Format("How much is a {0} {1}", car.Make, car.Name);
+                        List<string> results = WebSearch.GetResults(query, "$");
+
+                        sb.AppendLine(query);
+                        results.ForEach(x => sb.AppendLine(x.ToString()));
+                        sb.AppendLine();
+
+                        List<int> resultGroup = Utilities.ParseCurrencyFromText(results);
+                        pricesByCar.Add(car.Model, resultGroup);
+
+                        task.Increment(1);
+                        ctx.Refresh();
+                    }
+
+                    if (sb.Length > 0)
+                        Utilities.WriteToFile(WorkingDirectory, PriceGeneratorOutputFileName, sb);
+
+                    task.StopTask();
+                }
+            });
+
+            if (!pricesByCar.Any())
+            {
+                AnsiConsole.MarkupLine("[orange1]No pricing information for the current list of vehicles was found during the search.[/]");
+                return;
+            }
+
+            SelectionPrompt<ListOption<Dictionary<string, List<int>>>> prompt = new SelectionPrompt<ListOption<Dictionary<string, List<int>>>>();
+            prompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
+                "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
+
+            prompt.AddChoice(new ListOption<Dictionary<string, List<int>>>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
+            prompt.AddChoice(new ListOption<Dictionary<string, List<int>>>("Cancel", () => throw new Exception(GlobalConstants.Commands.CANCEL)));
+
+            ListOption<Dictionary<string, List<int>>> option = AnsiConsole.Prompt(prompt);
+            option.Action(pricesByCar);
         }
 
         private void SaveChanges()
