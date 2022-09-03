@@ -61,6 +61,7 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
+        [Documentation("Opens the current working directory in the file system.")]
         private void OpenWorkingDirectory()
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()

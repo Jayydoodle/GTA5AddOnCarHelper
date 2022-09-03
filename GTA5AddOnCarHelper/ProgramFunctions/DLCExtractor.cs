@@ -15,6 +15,9 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
+        private const string Summary = "A utility that extract dlc.rpf files from compressed (.zip/.rar/.7zip) vehicle download files, formats them " +
+        "into subfolders for easy insertion into the [orange1]mods/update/x64/dlcpacks[/] folder, and generates inserts for the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file";
+
         private const string DLCFileName = "dlc.rpf";
         private const string DLCListInsertFormatString = "<Item>dlcpacks:{0}/{1}/</Item>";
         private const string DLCListOutputFileName = "GTA5_DLCListGenerator.txt";
@@ -25,6 +28,7 @@ namespace GTA5AddOnCarHelper
 
         #region Public API
 
+        [Documentation(Summary)]
         public override void Run()
         {
             Initialize();
@@ -41,13 +45,14 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Extract Vehicles From Downloads", ExtractDLCFiles));
             listOptions.Add(new ListOption("Generate DLC List Inserts", GenerateDLCList));
             listOptions.AddRange(base.GetListOptions());
+            listOptions.Add(GetHelpOption());
 
             return listOptions;
         }
 
         private string GetFilePrefix()
         {
-            string prefix = Utilities.GetInput("Enter in the sub-folder path that you want your cars folder to have.  Ex. /cars: ");
+            string prefix = Utilities.GetInput("Enter in the sub-folder path that you want your vehicles folder to have.  Ex. /cars: ");
 
             if (!string.IsNullOrEmpty(prefix) && !prefix.StartsWith("/"))
                 prefix = "/" + prefix;
@@ -55,7 +60,7 @@ namespace GTA5AddOnCarHelper
             if (prefix.EndsWith("/"))
                 prefix = prefix.Substring(0, prefix.Length - 1);
 
-            AnsiConsole.MarkupLine("\nYour inserts will be printed in the format: " + string.Format(DLCListInsertFormatString, string.Format("[red]{0}[/]", prefix), "CAR_NAME_HERE"));
+            AnsiConsole.MarkupLine("\nYour inserts will be printed in the format: " + string.Format(DLCListInsertFormatString, string.Format("[red]{0}[/]", prefix), "VEHICLE_NAME_HERE"));
 
             return prefix;
         }
@@ -85,7 +90,7 @@ namespace GTA5AddOnCarHelper
             AnsiConsole.MarkupLine("[pink1]Please Be Advised...[/]\nWhen performing this type of extraction, " +
                 "files that do not contain [green]{0}[/] files are automatically filtered for faster extraction times.  If the " +
                 "total number of extracted vehicles at the end of the process does not match your expected total, there are " +
-                "likely some 'replace' cars in your list.  You can try extracting the files on your own and use the" +
+                "likely some 'replace' vehicles in your list.  You can try extracting the files on your own and use the" +
                 "[blue]'Extract from already unarchived folders'[/] option to get " +
                 "a more verbose list of vehicles that have been filtered out.", DLCFileName);
 
@@ -167,6 +172,9 @@ namespace GTA5AddOnCarHelper
 
         #region Private API: Prompt Functions
 
+        [Documentation("Takes a folder containing vehicles downloaded from the gta5-mods site and extracts all of the folders containing the dlc.rpf file. " +
+        "Extraction can be performed either directly on the compressed (.zip/.rar/.7zip) files, or you can pre-unzip all the files yourself and have the extraction " +
+        "be performed on all of the unarchived folders.  These folders can then be copied into the [orange1]mods/update/x64/dlcpacks[/] folder")]
         private void ExtractDLCFiles()
         {
             string sourceDirPrompt = "\nEnter the path to the directory containing all of your vehicle downloads: ";
@@ -253,6 +261,8 @@ namespace GTA5AddOnCarHelper
             }
         }
 
+        [Documentation("Takes all of the folders generated from 'Extract Vehicles From Downloads' option and generates a list of inserts for them " +
+        "that can be pasted into the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file")]
         private void GenerateDLCList()
         {
             string path = Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName);
@@ -260,7 +270,7 @@ namespace GTA5AddOnCarHelper
 
             if (!vehicledir.Exists || !vehicledir.GetDirectories().Any())
             {
-                AnsiConsole.MarkupLine("No cars exist in the directory [orange1]{0}[/].  Please run the vehicle extraction tool to continue.", path);
+                AnsiConsole.MarkupLine("No vehicles exist in the directory [orange1]{0}[/].  Please run the vehicle extraction tool to continue.", path);
                 return;
             }
 

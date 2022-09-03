@@ -13,6 +13,8 @@ namespace CustomSpectreConsole
         public virtual string DisplayName { get; set; }
         public virtual Action Function { get; set; }
 
+        public bool IsHelpOption { get { return DisplayName == GlobalConstants.SelectionOptions.Help; } }
+
         #endregion
 
         #region Constructor
@@ -44,7 +46,6 @@ namespace CustomSpectreConsole
         #region Properties
 
         public new Func<T> Function { get; set; }
-        public Action<T> Action { get; set; }
 
         #endregion
 
@@ -56,10 +57,23 @@ namespace CustomSpectreConsole
             Function = function;
         }
 
-        public ListOption(string displayName, Action<T> action)
+        #endregion
+    }
+
+    public class ListOption<T, U> : ListOption
+    {
+        #region Properties
+
+        public new Func<T, U> Function { get; set; }
+
+        #endregion
+
+        #region Constructor
+
+        public ListOption(string displayName, Func<T, U> function)
         {
             DisplayName = displayName;
-            Action = action;
+            Function = function;
         }
 
         #endregion

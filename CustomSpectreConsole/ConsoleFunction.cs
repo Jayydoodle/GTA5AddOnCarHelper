@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,17 +47,21 @@ namespace CustomSpectreConsole
         {
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
             prompt.Title = "Select an option:";
-            prompt.AddChoices(GetListOptions());
+            List<ListOption> options = GetListOptions();
+            prompt.AddChoices(options);
 
             while (true)
             {
                 ListOption option = AnsiConsole.Prompt(prompt);
 
-                if (option.Function != null)
+                if (option.Function != null || option.IsHelpOption)
                 {
                     try
                     {
-                        option.Function();
+                        if (option.IsHelpOption)
+                            ((ListOption<List<ListOption>, bool>)option).Function(options);
+                        else
+                            option.Function();
                     }
                     catch (Exception e)
                     {
@@ -80,6 +86,42 @@ namespace CustomSpectreConsole
             listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(GlobalConstants.Commands.MENU)));
 
             return listOptions;
+        }
+        
+        public static ListOption GetHelpOption()
+        {
+            return new ListOption<List<ListOption>, bool>(GlobalConstants.SelectionOptions.Help, PrintHelpText);
+        }
+
+        #endregion
+
+        #region Private API
+
+        private static bool PrintHelpText(List<ListOption> options)
+        {
+            Rule rule = new Rule("[pink1]Help[/]");
+            rule.RuleStyle("blue");
+            AnsiConsole.Write(rule);
+            AnsiConsole.WriteLine();
+
+            options.ForEach(x =>
+            {
+                if (x.Function != null && x.Function.Method.HasAttribute<DocumentationAttribute>())
+                {
+                    AnsiConsole.MarkupLine("[green]{0}[/]", x.DisplayName);
+
+                    DocumentationAttribute attr = x.Function.Method.GetCustomAttribute(typeof(DocumentationAttribute)) as DocumentationAttribute;
+                    AnsiConsole.MarkupLine(attr.Summary);
+                    AnsiConsole.WriteLine();
+                }
+            });
+
+            rule = new Rule();
+            rule.RuleStyle("blue");
+            AnsiConsole.Write(rule);
+            AnsiConsole.WriteLine();
+
+            return true;
         }
 
         #endregion

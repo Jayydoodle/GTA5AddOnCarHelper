@@ -18,7 +18,10 @@ namespace GTA5AddOnCarHelper
 {
     public sealed class PremiumDeluxeAutoManager : AddOnCarHelperFunctionBase<PremiumDeluxeAutoManager>
     {
-        #region
+        #region Constants
+
+        private const string Summary = "A utility that uses extracted vehicles.meta files to generate .ini files that are compatible " +
+        "with the Premium Deluxe Motorsport Car Dealership mod. [violet]https://www.gta5-mods.com/scripts/premium-deluxe-motorsports-car-shop[/]";
 
         private const string PriceGeneratorOutputFileName = "price_generator_search_results.txt";
 
@@ -32,6 +35,7 @@ namespace GTA5AddOnCarHelper
 
         #region Public API
 
+        [Documentation(Summary)]
         public override void Run()
         {
             Initialize();
@@ -40,7 +44,7 @@ namespace GTA5AddOnCarHelper
 
             if (Cars.Any())
             {
-                AnsiConsole.MarkupLine("Imported [blue]{0}[/] cars from the directory [blue]{1}[/]\n", Cars.Count(), WorkingDirectoryName);
+                AnsiConsole.MarkupLine("Imported [blue]{0}[/] vehicles from the directory [blue]{1}[/]\n", Cars.Count(), WorkingDirectoryName);
                 string prompt = string.Format("Would you like to check for new [green]{0}[/] files to add to this list?", Constants.FileNames.VehicleMeta + Constants.Extentions.Meta);
 
                 importMeta = Utilities.GetConfirmation(prompt);
@@ -59,7 +63,7 @@ namespace GTA5AddOnCarHelper
                         }
                     }
 
-                    AnsiConsole.MarkupLine("Imported [blue]{0}[/] new cars\n", importCount);
+                    AnsiConsole.MarkupLine("Imported [blue]{0}[/] new vehicles\n", importCount);
                 }
             }
             else 
@@ -87,18 +91,19 @@ namespace GTA5AddOnCarHelper
         {
             List<ListOption> listOptions = new List<ListOption>();
 
-            listOptions.Add(new ListOption("Show All Cars", ShowAllCars));
-            listOptions.Add(new ListOption("Edit A Car", EditCar));
-            listOptions.Add(new ListOption("Edit Multiple Cars", GetEditOptions));
+            listOptions.Add(new ListOption("Show All Vehicles", ShowAllVehicles));
+            listOptions.Add(new ListOption("Edit A Vehicle", EditVehicle));
+            listOptions.Add(new ListOption("Edit Multiple Vehicles", GetBulkEditOptions));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
+            listOptions.Add(GetHelpOption());
 
             return listOptions;
         }
 
         private PremiumDeluxeListFilter GetPartialMatchFiler()
         {
-            string prompt = string.Format("Enter in the text you would like to search for.  The list of cars " +
+            string prompt = string.Format("Enter in the text you would like to search for.  The list of vehicles " +
                 "produced will be based on a partial text on the [blue]{0}[/] or [blue]{1}[/]: ", nameof(PremiumDeluxeCar.Name), nameof(PremiumDeluxeCar.Model));
 
             string input = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
@@ -131,14 +136,14 @@ namespace GTA5AddOnCarHelper
             Cars[car.Model] = car;
         }
 
-        private void AutoCalculateVehiclePrices(ConcurrentDictionary<string, List<int>> pricesByCar)
+        private bool AutoCalculateVehiclePrices(ConcurrentDictionary<string, List<int>> pricesByCar)
         {
             string max = "Take the highest value (recommended)";
             string min = "Take the lowest value";
             string average = "Take the average of the values";
 
             SelectionPrompt<string> prompt = new SelectionPrompt<string>();
-            prompt.Title = "How would you like to handle the list of prices found for each car?";
+            prompt.Title = "How would you like to handle the list of prices found for each vehicle?";
             prompt.AddChoices(new string[] { max, min, average, GlobalConstants.TEXTINFO.ToTitleCase((GlobalConstants.Commands.CANCEL.ToLower())) });
 
             string choice = AnsiConsole.Prompt(prompt);
@@ -160,25 +165,31 @@ namespace GTA5AddOnCarHelper
                 else if (choice == average)
                     pair.Value.Price = (int)prices.Average();
             }
+
+            return true;
         }
 
         #endregion
 
         #region Private API: Prompt Functions
 
-        private void ShowAllCars()
+        [Documentation("Displays a grid containing all of the currently loaded vehicles")]
+        private void ShowAllVehicles()
         {
             PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
             TableDisplay.BuildDisplay<PremiumDeluxeCar>(filter);
         }
 
-        private void EditCar()
+        [Documentation("Edit a single vehicle from the list of currently loaded vehicles.  You will be prompted from the model name of the vehicle, which you should be able to copy " +
+        "from the grid after using the 'Show All Vehicles' option - and then you will be asked to edit the vehicle's properties one by one.  To skip editing a field, leave the input " +
+        "blank and press [blue]<enter>[/].")]
+        private void EditVehicle()
         {
-            string modelName = Utilities.GetInput("Enter the model name of the car you wish to edit: ", x => !string.IsNullOrEmpty(x));
+            string modelName = Utilities.GetInput("Enter the model name of the vehicle you wish to edit: ", x => !string.IsNullOrEmpty(x));
             Cars.TryGetValue(modelName, out PremiumDeluxeCar car);
 
             if (car == null) {
-                AnsiConsole.MarkupLine(string.Format("A car with the model name [green]{0}[/] was not found", modelName));
+                AnsiConsole.MarkupLine(string.Format("A vehicle with the model name [green]{0}[/] was not found", modelName));
                 return;
             }
 
@@ -186,23 +197,37 @@ namespace GTA5AddOnCarHelper
             UpdateCarFields(car, options.GetEditableProperties());
         }
 
-        private void GetEditOptions()
+        [Documentation("Shows additional options for editing more than one vehicle at a time")]
+        private void GetBulkEditOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Edit Cars By Filter", EditCarsByFilter));
-            listOptions.Add(new ListOption("Bulk Edit Cars", BulkEditCars));
+            listOptions.Add(new ListOption("Edit Vehicles By Filter", EditCarsByFilter));
+            listOptions.Add(new ListOption("Bulk Edit Vehicles", BulkEditVehicles));
             listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
-            listOptions.Add(new ListOption("Get Vehicle Prices From Web Search", GenerateVehiclePrices));
+            listOptions.Add(new ListOption("Update Vehicle Prices From Web Search", GenerateVehiclePrices));
             listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
+            listOptions.Add(GetHelpOption());
 
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
             prompt.Title = "Select a method for editing:";
             prompt.AddChoices(listOptions);
 
             ListOption choice = AnsiConsole.Prompt(prompt);
-            choice.Function();
+
+            if (choice.IsHelpOption)
+            {
+                ((ListOption<List<ListOption>, bool>)choice).Function(listOptions);
+                GetBulkEditOptions();
+            }
+            else
+            {
+                choice.Function();
+            }
         }
 
+        [Documentation("Allows you to edit a list of vehicles after choosing from a list of pre-defined filters.  After choosing the desired " +
+        "filters, vehicles matching the filter criteria will be fed in one by one so that you can edit their properties.  While editing, if you leave " +
+        "the input blank and press [blue]<enter>[/], the current property will be skipped.")]
         private void EditCarsByFilter()
         {
             EditOptions<PremiumDeluxeCar> options = EditOptions<PremiumDeluxeCar>.Prompt();
@@ -217,10 +242,13 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        private void BulkEditCars()
+        [Documentation("Allows you to edit a list of vehicles in bulk after choosing from a list of pre-defined filters.  This option is similar to the 'Edit by filter' " +
+        "option, except that vehicles are not fed in one by one for editing.  You will be prompted for values for each of the fields you want to edit, and [red]ALL[/] vehicles matching " +
+        "the filters you've chosen will have their properties updated to whatever values you entered.")]
+        private void BulkEditVehicles()
         {
             SelectionPrompt<ListOption<PremiumDeluxeListFilter>> prompt = new SelectionPrompt<ListOption<PremiumDeluxeListFilter>>();
-            prompt.Title = "Select the method you wish to use to filter down the list of cars that will be edited";
+            prompt.Title = "Select the method you wish to use to filter down the list of vehicles that will be edited";
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", () => new PremiumDeluxeListFilter(Cars.Values)));
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
             prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
@@ -233,7 +261,7 @@ namespace GTA5AddOnCarHelper
 
             if (!filteredCars.Any()) 
             {
-                AnsiConsole.WriteLine("No cars were found.");
+                AnsiConsole.WriteLine("No vehicles were found.");
                 return;
             }
 
@@ -247,7 +275,7 @@ namespace GTA5AddOnCarHelper
             if (!enteredValues.Any())
                 return;
 
-            AnsiConsole.MarkupLine(string.Format("\nThe [bold red]{0}[/] cars shown in the grid above will be updated as follows:", filteredCars.Count()));
+            AnsiConsole.MarkupLine(string.Format("\nThe [bold red]{0}[/] vehicles shown in the grid above will be updated as follows:", filteredCars.Count()));
             
             foreach(KeyValuePair<string, object> pair in enteredValues)
                 AnsiConsole.MarkupLine(string.Format("[bold blue]{0}[/]: {1}", pair.Key, pair.Value));
@@ -275,11 +303,15 @@ namespace GTA5AddOnCarHelper
             }
         }
 
+        [Documentation("Looks at the list of supplied .gxt2 files (or any custom configuration you've performed in the Language Generator), and attempts to replace the vehicle " +
+        "names currently assigned to the list of vehicles with their proper names that have been defined in the language files.  This is useful because the Premium Deluxe Motorsport " +
+        "dealership manages the names of vehicles on its own.  So if you want the vehicle names at the dealership to match the name that appears when you enter/exit a vehicle, the names" +
+        "must be correct in the Premium Deluxe mod's .ini files.")]
         private void UpdateNamesFromLanguageFiles()
         {
             Dictionary<string, LanguageEntry> languageDictionary = LanguageDictionary.GetEntries();
 
-            bool proceed = Utilities.GetConfirmation("This action will attempt to map the name of all cars in " +
+            bool proceed = Utilities.GetConfirmation("This action will attempt to map the name of all vehicles in " +
                 "the current list to their corresponding entry in the available language files (if one exists).  Would you like to proceed?");
 
             if (!proceed)
@@ -302,6 +334,9 @@ namespace GTA5AddOnCarHelper
             }
         }
 
+        [Documentation("Performs a Google search on your list of vehicles in an attempt to gather real pricing data for each car that can be automatically or manually assigned. " +
+        "It's recommended that you do this AFTER you've assigned realistic names to all of the vehicles - either by manual entry or via the 'Update from Language Files' option. " +
+        "Reason being, the search will be based on the MAKE and NAME fields, and if there is strange data in those fields then the results will be inaccurate.")]
         private void GenerateVehiclePrices()
         {
             StringBuilder sb = new StringBuilder();
@@ -371,17 +406,23 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>>> prompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>>>();
+            SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>> prompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>>();
             prompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
                 "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
 
-            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
-            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>>("Cancel", (s) => throw new Exception(GlobalConstants.Commands.CANCEL)));
+            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
+            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Cancel", (s) => throw new Exception(GlobalConstants.Commands.CANCEL)));
 
-            ListOption<ConcurrentDictionary<string, List<int>>> option = AnsiConsole.Prompt(prompt);
-            option.Action(pricesByCar);
+            ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(prompt);
+            option.Function(pricesByCar);
         }
 
+        [Documentation("Takes all of the vehicle edits you've made and generates .ini files that will be saved to your PremiumDeluxeAutoManager folder. " +
+        "A separate .ini file will be generated for each unique 'class' you've assigned to each of your vehicles, which will represent how your vehicles " +
+        "are grouped together once inside the Premium Deluxe dealership.  These .ini files will need to be added to your [orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Vehicles[/] " +
+        "folder, and a reference to the name of the .ini file will need to be added to [orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the " +
+        "[orange1].cfg[/] language file of your choice.  Every time 'SaveChanges' is selected, any existing .ini files in the PremiumDeluxeManager folder will " +
+        "be archived so that changes can easily be reversed.  [red bold]Don't forget to save changes before exiting the Premium Deluxe Auto Manager menu![/]")]
         private void SaveChanges()
         {
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
@@ -427,12 +468,12 @@ namespace GTA5AddOnCarHelper
                     return;
 
                 MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
-                prompt.Title = "Select the options you wish to use to filter the list of cars";
+                prompt.Title = "Select the options you wish to use to filter the list of vehicles";
                 prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
+                prompt.AddChoice(new EditOptionChoice(EditOptionChoice.ConfigureSorting, nameof(ListFilter.OrderBys)));
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                            .OrderBy(x => x).Distinct().ToList();

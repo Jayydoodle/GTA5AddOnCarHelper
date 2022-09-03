@@ -114,7 +114,7 @@ namespace CustomSpectreConsole
             prompt.Required = false;
             prompt.PageSize = 20;
 
-            prompt.AddChoice(new EditOptionChoice("Configure Ordering", nameof(ListFilter.OrderBys)));
+            prompt.AddChoice(new EditOptionChoice(EditOptionChoice.ConfigureSorting, nameof(ListFilter.OrderBys)));
 
             List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
             AddFilters(choices);
@@ -129,7 +129,7 @@ namespace CustomSpectreConsole
         {
             IEnumerable<string> availableOrderBys = typeof(T).GetProperties().Where(x => x.HasAttribute<TableColumnAttribute>()).Select(x => x.Name);
 
-            string promptTitleFormat = "Select the {0} field you would like to order the list of cars by, or select [bold green]{1}[/] to proceed";
+            string promptTitleFormat = "Select the {0} field you would like to order the list of vehicles by and press [bold orange1]<enter>[/], or select [bold green]{1}[/] to proceed";
 
             SelectionPrompt<string> prompt = new SelectionPrompt<string>();
             prompt.Title = string.Format(promptTitleFormat, "first", GlobalConstants.SelectionOptions.Continue);

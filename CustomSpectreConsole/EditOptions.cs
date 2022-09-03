@@ -90,6 +90,12 @@ namespace CustomSpectreConsole
 
     public class EditOptionChoice : IMultiSelectionItem<EditOptionChoiceDetails>
     {
+        #region Constants
+
+        public const string ConfigureSorting = "Use Custom Sorting";
+
+        #endregion
+
         #region Properties
 
         public EditOptionChoice Parent { get; set; }

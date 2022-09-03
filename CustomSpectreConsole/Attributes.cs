@@ -6,6 +6,16 @@ using System.Threading.Tasks;
 
 namespace CustomSpectreConsole
 {
+    public class DocumentationAttribute : Attribute
+    {
+        public string Summary { get; set; }
+
+        public DocumentationAttribute(string summary)
+        {
+            Summary = summary;
+        }   
+    }
+
     public class ProtectedAttribute : Attribute
     {
     }

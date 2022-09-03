@@ -24,6 +24,7 @@ namespace CustomSpectreConsole
             public const string No = "No";
             public const string Exit = "Exit";
             public const string Continue = "Continue";
+            public const string Help = "Help";
             public const string ReturnToMenu = "Return To Menu";
             public const string ReturnToMainMenu = "Return To Main Menu";
         }
