@@ -152,6 +152,8 @@ namespace GTA5AddOnCarHelper
             if (choice == GlobalConstants.SelectionOptions.Cancel)
                 throw new Exception(GlobalConstants.Commands.CANCEL);
 
+            int successCount = 0;
+
             foreach (KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
             {
                 pricesByCar.TryGetValue(pair.Key, out List<int> prices);
@@ -165,7 +167,11 @@ namespace GTA5AddOnCarHelper
                     pair.Value.Price = prices.Min();
                 else if (choice == average)
                     pair.Value.Price = (int)prices.Average();
+
+                successCount++;
             }
+
+            AnsiConsole.MarkupLine("Prices for [pink1]{0}[/] vehicles have been updated successfully!", successCount);
 
             return true;
         }
