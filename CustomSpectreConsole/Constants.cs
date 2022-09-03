@@ -9,8 +9,6 @@ namespace CustomSpectreConsole
 {
     public class GlobalConstants
     {
-        public static TextInfo TEXTINFO = new CultureInfo("en-us", false).TextInfo;
-
         public static class Commands
         {
             public const string CANCEL = "CANCEL";
@@ -23,6 +21,7 @@ namespace CustomSpectreConsole
             public const string Yes = "Yes";
             public const string No = "No";
             public const string Exit = "Exit";
+            public const string Cancel = "Cancel";
             public const string Continue = "Continue";
             public const string Help = "Help";
             public const string ReturnToMenu = "Return To Menu";

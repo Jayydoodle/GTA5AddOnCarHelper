@@ -30,8 +30,14 @@ namespace GTA5AddOnCarHelper
         [Protected]
         public string GXT { get; set; }
 
-        [TableColumnAttribute]
         public int Price { get; set; }
+
+        [TableColumnAttribute]
+        [Protected]
+        public string Cost
+        {
+            get { return string.Format("{0:n0}", Price); }
+        }
 
         #endregion
 
@@ -49,6 +55,7 @@ namespace GTA5AddOnCarHelper
             typeof(PremiumDeluxeCar)
             .GetProperties(BindingFlags.Public|BindingFlags.Instance)
             .Where(x => x.Name != nameof(Class))
+            .Where(x => x.Name != nameof(Cost))
             .OrderByDescending(x => x.Name == nameof(Name))
             .ThenByDescending(x => x.Name == nameof(Price))
             .ThenByDescending(x => x.Name == nameof(Model))

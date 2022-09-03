@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -144,11 +145,11 @@ namespace GTA5AddOnCarHelper
 
             SelectionPrompt<string> prompt = new SelectionPrompt<string>();
             prompt.Title = "How would you like to handle the list of prices found for each vehicle?";
-            prompt.AddChoices(new string[] { max, min, average, GlobalConstants.TEXTINFO.ToTitleCase((GlobalConstants.Commands.CANCEL.ToLower())) });
+            prompt.AddChoices(new string[] { max, min, average, GlobalConstants.SelectionOptions.Cancel });
 
             string choice = AnsiConsole.Prompt(prompt);
 
-            if (choice.ToUpper() == GlobalConstants.Commands.CANCEL)
+            if (choice == GlobalConstants.SelectionOptions.Cancel)
                 throw new Exception(GlobalConstants.Commands.CANCEL);
 
             foreach (KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
@@ -164,6 +165,36 @@ namespace GTA5AddOnCarHelper
                     pair.Value.Price = prices.Min();
                 else if (choice == average)
                     pair.Value.Price = (int)prices.Average();
+            }
+
+            return true;
+        }
+
+        private bool ManuallyAssignVehiclePrices(ConcurrentDictionary<string, List<int>> pricesByCar)
+        {
+            foreach (KeyValuePair<string, PremiumDeluxeCar> pair in Cars)
+            {
+                pricesByCar.TryGetValue(pair.Key, out List<int> prices);
+
+                if (prices == null || !prices.Any())
+                    continue;
+
+                List<string> choices = new List<string>() { "Skip", GlobalConstants.SelectionOptions.Cancel };
+                choices.AddRange(prices.Select(x => string.Format("{0:n0}", x)));
+
+                SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+                prompt.Title = String.Format("How much is a [blue]{0}[/] [pink1]{1}[/]?", pair.Value.Make, pair.Value.GetDisplayName());
+                prompt.AddChoices(choices);
+
+                string choice = AnsiConsole.Prompt(prompt);
+
+                if(choice == GlobalConstants.SelectionOptions.Cancel)
+                    throw new Exception(GlobalConstants.Commands.CANCEL);
+
+                bool couldParse = int.TryParse(choice, NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out int result);
+
+                if(couldParse)
+                    pair.Value.Price = result;  
             }
 
             return true;
@@ -411,6 +442,7 @@ namespace GTA5AddOnCarHelper
                 "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
 
             prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
+            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
             prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Cancel", (s) => throw new Exception(GlobalConstants.Commands.CANCEL)));
 
             ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(prompt);
