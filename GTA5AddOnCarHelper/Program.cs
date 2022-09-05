@@ -126,7 +126,13 @@ namespace GTA5AddOnCarHelper
         private static void OpenDirectory()
         {
             Dictionary<Settings.Node, string> paths = Settings.GetValues(x => x.ToString().Contains("Path"));
-            paths = paths.Where(x => Directory.Exists(x.Value)).ToDictionary(x => x.Key, x => x.Value); 
+            paths = paths.Where(x => Directory.Exists(x.Value)).ToDictionary(x => x.Key, x => x.Value);
+
+            if(!paths.Any())
+            {
+                Utilities.OpenDirectory(Environment.CurrentDirectory);
+                return;
+            }
 
             SelectionPrompt<Settings.Node> prompt = new SelectionPrompt<Settings.Node>();
             prompt.Title = "Select the directory you want to open:";
