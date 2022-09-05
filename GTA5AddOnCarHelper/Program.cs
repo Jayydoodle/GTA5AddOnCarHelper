@@ -10,7 +10,7 @@ namespace GTA5AddOnCarHelper
 {
     class Program
     {
-        private const string VersionNumber = "4.0";
+        private const string VersionNumber = "4.1";
 
         static void Main(string[] args)
         {
