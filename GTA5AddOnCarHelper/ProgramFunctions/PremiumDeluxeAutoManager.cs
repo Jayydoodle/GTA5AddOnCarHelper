@@ -21,9 +21,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string Summary = "A utility that uses extracted vehicles.meta files to generate .ini files that are compatible " +
-        "with the Premium Deluxe Motorsport Car Dealership mod. [violet]https://www.gta5-mods.com/scripts/premium-deluxe-motorsports-car-shop[/]";
-
         private const string PriceGeneratorOutputFileName = "price_generator_search_results.txt";
 
         #endregion
@@ -210,16 +207,14 @@ namespace GTA5AddOnCarHelper
 
         #region Private API: Prompt Functions
 
-        [Documentation("Displays a grid containing all of the currently loaded vehicles")]
+        [Documentation(ShowAllVehiclesSummary)]
         private void ShowAllVehicles()
         {
             PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
             TableDisplay.BuildDisplay<PremiumDeluxeCar>(filter);
         }
 
-        [Documentation("Edit a single vehicle from the list of currently loaded vehicles.  You will be prompted from the model name of the vehicle, which you should be able to copy " +
-        "from the grid after using the 'Show All Vehicles' option - and then you will be asked to edit the vehicle's properties one by one.  To skip editing a field, leave the input " +
-        "blank and press [blue]<enter>[/].")]
+        [Documentation(EditVehicleSummary)]
         private void EditVehicle()
         {
             string modelName = Utilities.GetInput("Enter the model name of the vehicle you wish to edit: ", x => !string.IsNullOrEmpty(x));
@@ -234,11 +229,11 @@ namespace GTA5AddOnCarHelper
             UpdateCarFields(car, options.GetEditableProperties());
         }
 
-        [Documentation("Shows additional options for editing more than one vehicle at a time")]
+        [Documentation(GetBulkEditOptionsSummary)]
         private void GetBulkEditOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Edit Vehicles By Filter", EditCarsByFilter));
+            listOptions.Add(new ListOption("Edit Vehicles By Filter", EditVehiclesByFilter));
             listOptions.Add(new ListOption("Bulk Edit Vehicles", BulkEditVehicles));
             listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
             listOptions.Add(new ListOption("Update Vehicle Prices From Web Search", GenerateVehiclePrices));
@@ -262,10 +257,8 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Allows you to edit a list of vehicles after choosing from a list of pre-defined filters.  After choosing the desired " +
-        "filters, vehicles matching the filter criteria will be fed in one by one so that you can edit their properties.  While editing, if you leave " +
-        "the input blank and press [blue]<enter>[/], the current property will be skipped.")]
-        private void EditCarsByFilter()
+        [Documentation(EditVehiclesByFilterSummary)]
+        private void EditVehiclesByFilter()
         {
             EditOptions<PremiumDeluxeCar> options = EditOptions<PremiumDeluxeCar>.Prompt();
             List<PropertyInfo> propsToEdit = options.GetEditableProperties();
@@ -279,9 +272,7 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Allows you to edit a list of vehicles in bulk after choosing from a list of pre-defined filters.  This option is similar to the 'Edit by filter' " +
-        "option, except that vehicles are not fed in one by one for editing.  You will be prompted for values for each of the fields you want to edit, and [red]ALL[/] vehicles matching " +
-        "the filters you've chosen will have their properties updated to whatever values you entered.")]
+        [Documentation(BulkEditVehiclesSummary)]
         private void BulkEditVehicles()
         {
             SelectionPrompt<ListOption<PremiumDeluxeListFilter>> prompt = new SelectionPrompt<ListOption<PremiumDeluxeListFilter>>();
@@ -340,10 +331,7 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Looks at the list of supplied .gxt2 files (or any custom configuration you've performed in the Language Generator), and attempts to replace the vehicle " +
-        "names currently assigned to the list of vehicles with their proper names that have been defined in the language files.  This is useful because the Premium Deluxe Motorsport " +
-        "dealership manages the names of vehicles on its own.  So if you want the vehicle names at the dealership to match the name that appears when you enter/exit a vehicle, the names" +
-        "must be correct in the Premium Deluxe mod's .ini files.")]
+        [Documentation(UpdateNamesFromLanguageFilesSummary)]
         private void UpdateNamesFromLanguageFiles()
         {
             Dictionary<string, LanguageEntry> languageDictionary = LanguageDictionary.GetEntries();
@@ -371,9 +359,7 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Performs a Google search on your list of vehicles in an attempt to gather real pricing data for each car that can be automatically or manually assigned. " +
-        "It's recommended that you do this AFTER you've assigned realistic names to all of the vehicles - either by manual entry or via the 'Update from Language Files' option. " +
-        "Reason being, the search will be based on the MAKE and NAME fields, and if there is strange data in those fields then the results will be inaccurate.")]
+        [Documentation(GenerateVehiclePricesSummary)]
         private void GenerateVehiclePrices()
         {
             StringBuilder sb = new StringBuilder();
@@ -413,7 +399,7 @@ namespace GTA5AddOnCarHelper
                         }
 
                         string query = string.Format("How much is a {0} {1}", car.Make, car.Name);
-                        List<string> results = WebSearch.GetResults(query, "$");
+                        List<string> results = WebSearch.GetGoogleResults(query, "$");
 
                         List<int> resultGroup = Utilities.ParseCurrencyFromText(results);
 
@@ -455,12 +441,7 @@ namespace GTA5AddOnCarHelper
             option.Function(pricesByCar);
         }
 
-        [Documentation("Takes all of the vehicle edits you've made and generates .ini files that will be saved to your PremiumDeluxeAutoManager folder. " +
-        "A separate .ini file will be generated for each unique 'class' you've assigned to each of your vehicles, which will represent how your vehicles " +
-        "are grouped together once inside the Premium Deluxe dealership.  These .ini files will need to be added to your [orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Vehicles[/] " +
-        "folder, and a reference to the name of the .ini file will need to be added to [orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the " +
-        "[orange1].cfg[/] language file of your choice.  Every time 'SaveChanges' is selected, any existing .ini files in the PremiumDeluxeManager folder will " +
-        "be archived so that changes can easily be reversed.  [red bold]Don't forget to save changes before exiting the Premium Deluxe Auto Manager menu![/]")]
+        [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
@@ -487,13 +468,9 @@ namespace GTA5AddOnCarHelper
 
         public class PremiumDeluxeListFilter : ListFilter<PremiumDeluxeCar> 
         {
-            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list) : base(list)
-            {
-            }
+            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list) : base(list) { }
 
-            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list, string textMatch) : base(list, textMatch)
-            {
-            }
+            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list, string textMatch) : base(list, textMatch) { }
 
             protected override IEnumerable<PremiumDeluxeCar> ApplyTextMatch(IEnumerable<PremiumDeluxeCar> list)
             {
@@ -537,6 +514,49 @@ namespace GTA5AddOnCarHelper
                 AddFilters(choices);
             }
         }
+
+        #endregion
+
+        #region Documentation
+
+        private const string Summary = "A utility that uses extracted vehicles.meta files to generate .ini files that are compatible " +
+        "with the Premium Deluxe Motorsport Car Dealership mod. [violet]https://www.gta5-mods.com/scripts/premium-deluxe-motorsports-car-shop[/]";
+
+        private const string ShowAllVehiclesSummary = "Displays a grid containing all of the currently loaded vehicles";
+
+        private const string EditVehicleSummary = "Edit a single vehicle from the list of currently loaded vehicles.  You will be prompted for " +
+        "the model name of the vehicle, which you should be able to copy from the grid after using the 'Show All Vehicles' option.  You then" +
+        "will be asked to edit the vehicle's properties one by one.  To skip editing a field, leave the input blank and press [blue]<enter>[/].";
+
+        private const string GetBulkEditOptionsSummary = "Shows additional options for editing more than one vehicle at a time";
+
+        private const string EditVehiclesByFilterSummary = "Allows you to edit a list of vehicles after choosing from a list of pre-defined filters.  " +
+        "After choosing the desired filters, vehicles matching the filter criteria will be fed in one by one so that you can edit their properties.  " +
+        "While editing, if you leave the input blank and press [blue]<enter>[/], the current property will be skipped.";
+
+        private const string BulkEditVehiclesSummary = "Allows you to edit a list of vehicles in bulk after choosing from a list of pre-defined filters.  " +
+        "This option is similar to the 'Edit by filter' option, except that vehicles are not fed in one by one for editing.  You will be prompted for values " +
+        "for each of the fields you want to edit, and [red]ALL[/] vehicles matching the filters you've chosen will have their properties updated to whatever " +
+        "values you entered.";
+
+        private const string UpdateNamesFromLanguageFilesSummary = "Looks at the list of supplied .gxt2 files (or any custom configuration you've performed " +
+        "in the Language Generator), and attempts to replace the vehicle names currently assigned to the list of vehicles with their proper names that have " +
+        "been defined in the language files.  This is useful because the Premium Deluxe Motorsport dealership manages the names of vehicles on its own.  So if " +
+        "you want the vehicle names at the dealership to match the name that appears when you enter/exit a vehicle, the names must be correct in the Premium " +
+        "Deluxe mod's .ini files.";
+
+        private const string GenerateVehiclePricesSummary = "Performs a Google search on your list of vehicles in an attempt to gather real pricing data for " +
+        "each car that can be automatically or manually assigned.  It's recommended that you do this AFTER you've assigned realistic names to all of the " +
+        "vehicles - either by manual entry or via the 'Update from Language Files' option.  Reason being, the search will be based on the MAKE and NAME fields, " +
+        "and if there is strange data in those fields then the results will be inaccurate.";
+
+        private const string SaveChangesSummary = "Takes all of the vehicle edits you've made and generates [aqua].ini[/] files that will be saved to your " +
+        "PremiumDeluxeAutoManager folder.  A separate .ini file will be generated for each unique 'class' you've assigned to each of your vehicles, which will " +
+        "represent how your vehicles are grouped together once inside the Premium Deluxe dealership.  These .ini files will need to be added to your " +
+        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Vehicles[/] folder, and a reference to the name of the .ini file will need to be added to " +
+        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the [orange1].cfg[/] language file of your choice.  Every time 'SaveChanges' " +
+        "is selected, any existing .ini files in the PremiumDeluxeManager folder will be archived so that changes can easily be reversed.  [red bold]Don't forget " +
+        "to save changes before exiting the Premium Deluxe Auto Manager menu![/]";
 
         #endregion
     }

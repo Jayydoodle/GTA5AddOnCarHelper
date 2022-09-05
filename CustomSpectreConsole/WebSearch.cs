@@ -10,7 +10,7 @@ namespace CustomSpectreConsole
 {
     public static class WebSearch
     {
-        public static List<string> GetResults(string query, string searchKey)
+        public static List<string> GetGoogleResults(string query, string searchKey)
         {
             string url = "http://www.google.com/search?q=" + query;
 

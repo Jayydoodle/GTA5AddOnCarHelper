@@ -16,10 +16,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string Summary = "[red]EXPERIMENTAL[/]: A utility that takes a folder full of unidentifyable .meta files (vehicles.meta, handling.meta, etc.) " +
-        "and attempts to organize them into sub-folders based on the model of the vehicle.  This is mainly to provide combatibility with the mmVehiclesMetaMerger " +
-        "mod for files that were extracted via the OpenIV search feature.  [violet]https://www.gta5-mods.com/tools/mmvehiclesmetamerger[/]";
-
         private const string ErrorDirName = "_ErrorFiles";
         private const string ArchiveDirName = "_Archive";
 
@@ -279,6 +275,14 @@ namespace GTA5AddOnCarHelper
                     ErrorMessages.ForEach(x => AnsiConsole.MarkupLine(x));
             }
         }
+
+        #endregion
+
+        #region Documentation
+
+        private const string Summary = "[red]EXPERIMENTAL[/]: A utility that takes a folder full of loose .meta files (vehicles.meta, handling.meta, etc.) " +
+        "and attempts to organize them into sub-folders based on the model of the vehicle.  This is mainly to provide combatibility with the mmVehiclesMetaMerger " +
+        "mod for files that were extracted via the OpenIV search feature.  [violet]https://www.gta5-mods.com/tools/mmvehiclesmetamerger[/]";
 
         #endregion
     }

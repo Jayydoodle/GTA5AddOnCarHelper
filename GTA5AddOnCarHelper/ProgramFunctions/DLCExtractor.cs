@@ -15,9 +15,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string Summary = "A utility that extract dlc.rpf files from compressed (.zip/.rar/.7zip) vehicle download files, formats them " +
-        "into subfolders for easy insertion into the [orange1]mods/update/x64/dlcpacks[/] folder, and generates inserts for the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file";
-
         private const string DLCFileName = "dlc.rpf";
         private const string DLCListInsertFormatString = "<Item>dlcpacks:{0}/{1}/</Item>";
         private const string DLCListOutputFileName = "GTA5_DLCListGenerator.txt";
@@ -172,9 +169,7 @@ namespace GTA5AddOnCarHelper
 
         #region Private API: Prompt Functions
 
-        [Documentation("Takes a folder containing vehicles downloaded from the gta5-mods site and extracts all of the folders containing the dlc.rpf file. " +
-        "Extraction can be performed either directly on the compressed (.zip/.rar/.7zip) files, or you can pre-unzip all the files yourself and have the extraction " +
-        "be performed on all of the unarchived folders.  These folders can then be copied into the [orange1]mods/update/x64/dlcpacks[/] folder")]
+        [Documentation(ExtractDLCFilesSummary)]
         private void ExtractDLCFiles()
         {
             string sourceDirPrompt = "\nEnter the path to the directory containing all of your vehicle downloads: ";
@@ -261,8 +256,7 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Takes all of the folders generated from 'Extract Vehicles From Downloads' option and generates a list of inserts for them " +
-        "that can be pasted into the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file")]
+        [Documentation(GenerateDLCListSummary)]
         private void GenerateDLCList()
         {
             string path = Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName);
@@ -290,6 +284,20 @@ namespace GTA5AddOnCarHelper
 
             Utilities.WriteToFile(destDir, DLCListOutputFileName, dlcList);
         }
+
+        #endregion
+
+        #region Documentation
+
+        private const string Summary = "A utility that extracts dlc.rpf files from compressed (.zip/.rar/.7zip) vehicle download files, formats them " +
+        "into subfolders for easy insertion into the [orange1]mods/update/x64/dlcpacks[/] folder, and generates inserts for the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file";
+
+        private const string ExtractDLCFilesSummary = "Takes a folder containing vehicles downloaded from the gta5-mods site and extracts all of the folders containing the dlc.rpf file. " +
+        "Extraction can be performed either directly on the compressed (.zip/.rar/.7zip) files, or you can pre-unzip all the files yourself and have the extraction " +
+        "be performed on all of the unarchived folders.  These folders can then be copied into the [orange1]mods/update/x64/dlcpacks[/] folder";
+
+        private const string GenerateDLCListSummary = "Takes all of the folders generated from 'Extract Vehicles From Downloads' option and generates a list of inserts for them " +
+        "that can be pasted into the [orange1]mods/update/update.rpf/common/data/dlclist.xml[/] file";
 
         #endregion
     }

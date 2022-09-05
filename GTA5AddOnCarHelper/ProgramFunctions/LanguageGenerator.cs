@@ -15,10 +15,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string Summary = "A utility that uses extracted .gxt2 language files to pull in all of the currently configured MAKE and MODEL display names " +
-        "for vehicles loaded into the program.  These names can be updated (or added for any vehicles/makes that are missing a display name), and a file will be generated " +
-        "containing text inserts which can be pasted into the language files located in [orange1]mods/update/update.rpf/x64/patch/data/lang[/] to fix the display names in game";
-
         public const string OutputFileName = "GTA5_LanguageGenerator.txt";
 
         #endregion
@@ -76,16 +72,14 @@ namespace GTA5AddOnCarHelper
 
         #region Program Functions
 
-        [Documentation("Shows a grid of the currently configured language mappings pulled from the source .gxt2 files " +
-        "and the existing " + OutputFileName + " file, if one exists")]
+        [Documentation(ShowMappingsSummary)]
         private void ShowMappings()
         {
             LanguageGeneratorListFilter filter = new LanguageGeneratorListFilter(Mappings.Values.OrderBy(x => x.Identifier));
             TableDisplay.BuildDisplay(filter);
         }
 
-        [Documentation("Edit a single language mapping based on the entered hash value, which can be found from the grid " +
-        "that displays when selecting the 'Show Mappings' option")]
+        [Documentation(EditMappingSummary)]
         private void EditMapping()
         {
             string hash = Utilities.GetInput("Enter the hash of the mapping you wish to edit: ", x => !string.IsNullOrEmpty(x));
@@ -101,9 +95,7 @@ namespace GTA5AddOnCarHelper
             UpdateMappingFields(mapping, options.GetEditableProperties());
         }
 
-        [Documentation("Allows you to edit a list of language mappings after choosing from a list of pre-defined filters.  After choosing the desired " +
-        "filters, mappings matching the filter criteria will be fed in one by one so that you can edit their display names.  While editing, if you leave " +
-        "the input blank and press [blue]<enter>[/], the current mapping will be skipped.")]
+        [Documentation(EditMappingsByFilterSummary)]
         private void EditMappingsByFilter()
         {
             EditOptions<LanguageMapping> options = new EditOptions<LanguageMapping>();
@@ -118,10 +110,7 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        [Documentation("Takes all of the mapping edits you've made and generates a file name " + OutputFileName + " that will be saved to the LanguageGenerator folder. " +
-        "The inserts in this file can be copied to the [orange1]mods/update/update.rpf/x64/patch/data/lang[/] to fix the display names of vehicles in game. Every time " +
-        "'SaveChanges' is selected, any previous " + OutputFileName + " file will be archived so that changes can easily be reversed.  " +
-        "[red bold]Don't forget to save changes before exiting the Language Generator menu![/]")]
+        [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
             Utilities.ArchiveFiles(WorkingDirectory, "*.txt", new List<string>() { OutputFileName });
@@ -256,6 +245,29 @@ namespace GTA5AddOnCarHelper
 
             #endregion
         }
+
+        #endregion
+
+        #region Documentation
+
+        private const string Summary = "A utility that uses extracted .gxt2 language files to pull in all of the currently configured MAKE and MODEL display names " +
+        "for vehicles loaded into the program.  These names can be updated (or added for any vehicles/makes that are missing a display name), and a file will be generated " +
+        "containing text inserts which can be pasted into the language files located in [orange1]mods/update/update.rpf/x64/patch/data/lang[/] to fix the display names in game";
+
+        private const string ShowMappingsSummary = "Shows a grid of the currently configured language mappings pulled from the source .gxt2 files " +
+        "and the existing " + OutputFileName + " file, if one exists";
+
+        private const string EditMappingSummary = "Edit a single language mapping based on the entered hash value, which can be found from the grid " +
+        "that displays when selecting the 'Show Mappings' option";
+
+        private const string EditMappingsByFilterSummary = "Allows you to edit a list of language mappings after choosing from a list of pre-defined filters.  After choosing the desired " +
+        "filters, mappings matching the filter criteria will be fed in one by one so that you can edit their display names.  While editing, if you leave " +
+        "the input blank and press [blue]<enter>[/], the current mapping will be skipped.";
+
+        private const string SaveChangesSummary = "Takes all of the mapping edits you've made and generates a file named " + OutputFileName + " that will be saved to the LanguageGenerator folder. " +
+        "The inserts in this file can be copied to the [orange1]mods/update/update.rpf/x64/patch/data/lang[/] folder into the [orange1].cfg[/] file for your language to fix the display names " +
+        "of vehicles in game. Every time 'SaveChanges' is selected, any previous " + OutputFileName + " file will be archived so that changes can easily be reversed.  " +
+        "[red bold]Don't forget to save changes before exiting the Language Generator menu![/]";
 
         #endregion
     }
