@@ -64,12 +64,7 @@ namespace GTA5AddOnCarHelper
         [Documentation("Opens the current working directory in the file system.")]
         private void OpenWorkingDirectory()
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
-            {
-                FileName = WorkingDirectory.FullName,
-                UseShellExecute = true,
-                Verb = "open"
-            });
+            Utilities.OpenDirectory(WorkingDirectory.FullName);
         }
 
         private DirectoryInfo EnsureWorkingDirectory()

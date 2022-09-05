@@ -20,6 +20,16 @@ namespace CustomSpectreConsole
     {
         #region Public API: File Management
 
+        public static void OpenDirectory(string filePath)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+            {
+                FileName = filePath,
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
+
         public static DirectoryInfo GetDirectoryFromInput(string prompt, bool isRequired)
         {
             DirectoryInfo dir = null;

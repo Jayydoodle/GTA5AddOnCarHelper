@@ -91,7 +91,14 @@ namespace GTA5AddOnCarHelper
                     paths.TryGetValue(x, out string value);
 
                     if (!string.IsNullOrEmpty(value))
-                        AnsiConsole.MarkupLine(string.Format("[green]{0}[/]: {1}", x, value));
+                    {
+                        AnsiConsole.Markup(string.Format("[green]{0}[/]: {1}", x, value));
+
+                        if (!Directory.Exists(value))
+                            AnsiConsole.Markup(" [red bold]INVALID PATH[/]");
+
+                        AnsiConsole.WriteLine();
+                    }
                 });
 
                 rule = new Rule();
@@ -108,10 +115,27 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(VehicleMetaFileManager.Instance);
             listOptions.Add(LanguageGenerator.Instance);
             listOptions.Add(PremiumDeluxeAutoManager.Instance);
+            listOptions.Add(new ListOption("Open Directory", OpenDirectory));
             listOptions.Add(ConsoleFunction.GetHelpOption());
             listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.Exit, null));
 
             return listOptions;
+        }
+
+        [Documentation("Opens the selected directory in the file system.")]
+        private static void OpenDirectory()
+        {
+            Dictionary<Settings.Node, string> paths = Settings.GetValues(x => x.ToString().Contains("Path"));
+            paths = paths.Where(x => Directory.Exists(x.Value)).ToDictionary(x => x.Key, x => x.Value); 
+
+            SelectionPrompt<Settings.Node> prompt = new SelectionPrompt<Settings.Node>();
+            prompt.Title = "Select the directory you want to open:";
+            prompt.AddChoices(paths.Keys);
+
+            Settings.Node choice = AnsiConsole.Prompt(prompt);
+            DirectoryInfo dir = Settings.GetDirectory(choice);
+
+            Utilities.OpenDirectory(dir.FullName);
         }
     }
 }
