@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using SharpCompress.Common;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -57,7 +58,7 @@ namespace CustomSpectreConsole
 
         public static EditOptions<T> Prompt(bool allowProtecedEdit = false)
         {
-            MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+            MultiSelectionPrompt<EditOptionChoice<T>> prompt = new MultiSelectionPrompt<EditOptionChoice<T>>();
             prompt.Title = "\nSelect the fields you wish to edit";
             prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
             prompt.PageSize = 20;
@@ -66,11 +67,11 @@ namespace CustomSpectreConsole
 
             foreach (PropertyInfo prop in options.GetProperties())
             {
-                EditOptionChoice choice = new EditOptionChoice(prop.Name.SplitByCase(), prop.Name);
+                EditOptionChoice<T> choice = new EditOptionChoice<T>(prop.Name.SplitByCase(), prop.Name);
                 prompt.AddChoice(choice).Select();
             }
 
-            List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
+            List<EditOptionChoice<T>> choices = AnsiConsole.Prompt(prompt);
             choices.ForEach(choice => options.Select(choice.Value));
 
             return options;
@@ -88,19 +89,22 @@ namespace CustomSpectreConsole
         #endregion
     }
 
-    public class EditOptionChoice : IMultiSelectionItem<EditOptionChoiceDetails>
+    public abstract class EditOptionChoice
     {
         #region Constants
 
-        public const string ConfigureSorting = "Use Custom Sorting";
+        public const string ConfigureOrdering = "Use Custom Ordering";
 
         #endregion
+    }
 
+    public class EditOptionChoice<T> : EditOptionChoice, IMultiSelectionItem<EditOptionChoiceDetails<T>>
+    {
         #region Properties
 
-        public EditOptionChoice Parent { get; set; }
-        public List<EditOptionChoice> Children { get; set; }
-        private EditOptionChoiceDetails Details { get; set; }
+        public EditOptionChoice<T> Parent { get; set; }
+        public List<EditOptionChoice<T>> Children { get; set; }
+        private EditOptionChoiceDetails<T> Details { get; set; }
         public bool IsSelected { get; set; }
 
         public string DisplayName
@@ -113,44 +117,54 @@ namespace CustomSpectreConsole
             get { return Details.Value; }
         }
 
+        public Func<T, bool> Action
+        {
+            get { return Details.Action; }
+        }
+
         #endregion
 
         #region Constructor
 
-        public EditOptionChoice(EditOptionChoiceDetails details)
+        public EditOptionChoice(EditOptionChoiceDetails<T> details)
         {
             Details = details;
         }
 
         public EditOptionChoice(string displayName, string value)
         {
-            Details = new EditOptionChoiceDetails(displayName, value);
+            Details = new EditOptionChoiceDetails<T>(displayName, value);
+        }
+
+        public EditOptionChoice(string displayName, Func<T, bool> action)
+        {
+            Details = new EditOptionChoiceDetails<T>(displayName, action);
         }
 
         #endregion
 
         #region Public API
 
-        public ISelectionItem<EditOptionChoiceDetails> AddChild(string displayName, string value)
+        public ISelectionItem<EditOptionChoiceDetails<T>> AddChild(string displayName, string value)
         {
-            EditOptionChoiceDetails childDetails = new EditOptionChoiceDetails(displayName, value);
+            EditOptionChoiceDetails<T> childDetails = new EditOptionChoiceDetails<T>(displayName, value);
             return AddChild(childDetails);
         }
 
-        public ISelectionItem<EditOptionChoiceDetails> AddChild(EditOptionChoiceDetails details)
+        public ISelectionItem<EditOptionChoiceDetails<T>> AddChild(EditOptionChoiceDetails<T> details)
         {
-            EditOptionChoice child = new EditOptionChoice(details);
+            EditOptionChoice<T> child = new EditOptionChoice<T>(details);
             child.Parent = this;
 
             if (Children == null)
-                Children = new List<EditOptionChoice>();
+                Children = new List<EditOptionChoice<T>>();
 
             Children.Add(child);
 
             return child;
         }
 
-        public IMultiSelectionItem<EditOptionChoiceDetails> Select()
+        public IMultiSelectionItem<EditOptionChoiceDetails<T>> Select()
         {
             IsSelected = true;
 
@@ -166,14 +180,24 @@ namespace CustomSpectreConsole
         }
 
         #endregion
+
+        #region Static API
+
+        public static EditOptionChoice<T> OrderByOption()
+        {
+            return new EditOptionChoice<T>(ConfigureOrdering, nameof(ListFilter.OrderBys));
+        }
+
+        #endregion
     }
 
-    public class EditOptionChoiceDetails
+    public class EditOptionChoiceDetails<T>
     {
         #region Properties
 
         public string DisplayName { get; set; }
         public string Value { get; set; }
+        public Func<T, bool> Action { get; set; }   
 
         #endregion
 
@@ -183,6 +207,12 @@ namespace CustomSpectreConsole
         {
             DisplayName = displayName;
             Value = value;
+        }
+
+        public EditOptionChoiceDetails(string displayName, Func<T, bool> action)
+        {
+            DisplayName = displayName;
+            Action = action;
         }
 
         #endregion

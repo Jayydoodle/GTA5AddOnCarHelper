@@ -11,8 +11,7 @@ namespace CustomSpectreConsole
     public abstract class ListFilter
     {
         public List<string> OrderBys { get; set; }
-        public Dictionary<string, List<object>> Filters { get; set; }
-        public string TextMatch { get; set; }
+        protected Dictionary<string, List<object>> Filters { get; set; }
 
         public ListFilter()
         {
@@ -25,36 +24,39 @@ namespace CustomSpectreConsole
     {
         #region Properties
 
+        private List<Func<T, bool>> CustomFilters { get; set; }
         private IEnumerable<T> List { get; set; }
 
         #endregion
 
         #region Constructor
 
-        public ListFilter(IEnumerable<T> list, string textMatch) : base()
+        public ListFilter(IEnumerable<T> list, bool prompt = true) : base()
         {
-            TextMatch = textMatch;
             List = list;
-        }
+            CustomFilters = new List<Func<T, bool>>();
 
-        public ListFilter(IEnumerable<T> list) : base()
-        {
-            Prompt(list);
-            List = list;
+            if(prompt)
+                Prompt(list);
         }
 
         #endregion
 
         #region Public API
 
-        public void AddFilters(List<EditOptionChoice> choices)
+        public void AddCustomFilter(Func<T, bool> filter)
         {
-            IEnumerable<EditOptionChoice> currentChoices = choices;
+            CustomFilters.Add(filter);
+        }
+
+        public void AddFilters(List<EditOptionChoice<T>> choices)
+        {
+            IEnumerable<EditOptionChoice<T>> currentChoices = choices;
 
             if (currentChoices == null || !currentChoices.Any())
                 return;
 
-            foreach(EditOptionChoice choice in currentChoices)
+            foreach(EditOptionChoice<T> choice in currentChoices)
             {
                 if(choice.Value == nameof(OrderBys))
                 {
@@ -63,9 +65,9 @@ namespace CustomSpectreConsole
                 }
 
                 if (choice.Parent != null)
-                    AddFilter(choice.Parent.Value, choice.Value);
+                    AddFilter(choice.Parent.Value, choice);
                 else
-                    AddFilter(choice.Value, choice.Value);
+                    AddFilter(choice.Value, choice);
             }
 
         }
@@ -85,8 +87,7 @@ namespace CustomSpectreConsole
                     filteredList = filteredList.Where(x => pair.Value.Contains(prop.GetValue(x)));
             }
 
-            if (!string.IsNullOrEmpty(TextMatch) && filteredList != null)
-                filteredList = ApplyTextMatch(filteredList);
+            CustomFilters.ForEach(x => filteredList = filteredList.Where(x));
 
             return filteredList ?? new List<T>();
         }
@@ -95,12 +96,18 @@ namespace CustomSpectreConsole
 
         #region Protected API
 
-        protected void AddFilter(string propertyName, object value)
+        protected void AddFilter(string propertyName, EditOptionChoice<T> choice)
         {
+            if(choice.Action != null)
+            {
+                AddCustomFilter(choice.Action);
+                return;
+            }
+
             if (!Filters.ContainsKey(propertyName))
                 Filters.Add(propertyName, new List<object>());
 
-            Filters[propertyName].Add(value);
+            Filters[propertyName].Add(choice.Value);
         }
 
         protected virtual void Prompt(IEnumerable<T> list) 
@@ -108,21 +115,16 @@ namespace CustomSpectreConsole
             if (list == null)
                 return;
 
-            MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+            MultiSelectionPrompt<EditOptionChoice<T>> prompt = new MultiSelectionPrompt<EditOptionChoice<T>>();
             prompt.Title = "Select the options you wish to use to filter the list";
             prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
             prompt.Required = false;
             prompt.PageSize = 20;
 
-            prompt.AddChoice(new EditOptionChoice(EditOptionChoice.ConfigureSorting, nameof(ListFilter.OrderBys)));
+            prompt.AddChoice(EditOptionChoice<T>.OrderByOption());
 
-            List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
+            List<EditOptionChoice<T>> choices = AnsiConsole.Prompt(prompt);
             AddFilters(choices);
-        }
-
-        protected virtual IEnumerable<T> ApplyTextMatch(IEnumerable<T> list)
-        {
-            return list;
         }
 
         protected List<string> GetOrderBys()

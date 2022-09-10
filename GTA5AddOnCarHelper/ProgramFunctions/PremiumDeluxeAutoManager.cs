@@ -106,7 +106,8 @@ namespace GTA5AddOnCarHelper
 
             string input = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
 
-            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values, input);
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values, false);
+            filter.AddCustomFilter(x => (!string.IsNullOrEmpty(x.Model) && x.Model.Contains(input)) || (!string.IsNullOrEmpty(x.Name) && x.Name.Contains(input)));
 
             return filter;
         }
@@ -468,49 +469,42 @@ namespace GTA5AddOnCarHelper
 
         public class PremiumDeluxeListFilter : ListFilter<PremiumDeluxeCar> 
         {
-            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list) : base(list) { }
-
-            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list, string textMatch) : base(list, textMatch) { }
-
-            protected override IEnumerable<PremiumDeluxeCar> ApplyTextMatch(IEnumerable<PremiumDeluxeCar> list)
-            {
-                return list.Where(x => (!string.IsNullOrEmpty(x.Model) && x.Model.Contains(TextMatch)) || (!string.IsNullOrEmpty(x.Name) && x.Name.Contains(TextMatch)));
-            }
+            public PremiumDeluxeListFilter(IEnumerable<PremiumDeluxeCar> list, bool prompt = true) : base(list, prompt) { }
 
             protected override void Prompt(IEnumerable<PremiumDeluxeCar> cars)
             {
                 if (cars == null)
                     return;
 
-                MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+                MultiSelectionPrompt<EditOptionChoice<PremiumDeluxeCar>> prompt = new MultiSelectionPrompt<EditOptionChoice<PremiumDeluxeCar>>();
                 prompt.Title = "Select the options you wish to use to filter the list of vehicles";
                 prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(new EditOptionChoice(EditOptionChoice.ConfigureSorting, nameof(ListFilter.OrderBys)));
+                prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.OrderByOption());
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                            .OrderBy(x => x).Distinct().ToList();
                 if (classes.Any())
                 {
-                    EditOptionChoice filterClasses = new EditOptionChoice("Filter By Class", nameof(PremiumDeluxeCar.Class));
+                    EditOptionChoice<PremiumDeluxeCar> filterClasses = new EditOptionChoice<PremiumDeluxeCar>("Filter By Class", nameof(PremiumDeluxeCar.Class));
 
                     classes.ForEach(x => filterClasses.AddChild(x, x));
-                    MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterClasses, filterClasses.Children);
+                    MultiSelectionPrompt<EditOptionChoice<PremiumDeluxeCar>> p = prompt.AddChoiceGroup(filterClasses, filterClasses.Children);
                 }
 
                 List<string> makes = cars.Where(x => !string.IsNullOrEmpty(x.Make)).Select(x => x.Make)
                                          .OrderBy(x => x).Distinct().ToList();
                 if (makes.Any())
                 {
-                    EditOptionChoice filterMakes = new EditOptionChoice("Filter By Make", nameof(PremiumDeluxeCar.Make));
+                    EditOptionChoice<PremiumDeluxeCar> filterMakes = new EditOptionChoice<PremiumDeluxeCar>("Filter By Make", nameof(PremiumDeluxeCar.Make));
 
                     makes.ForEach(x => filterMakes.AddChild(x, x));
-                    MultiSelectionPrompt<EditOptionChoice> p = prompt.AddChoiceGroup(filterMakes, filterMakes.Children);
+                    MultiSelectionPrompt<EditOptionChoice<PremiumDeluxeCar>> p = prompt.AddChoiceGroup(filterMakes, filterMakes.Children);
                 }
 
-                List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
+                List<EditOptionChoice<PremiumDeluxeCar>> choices = AnsiConsole.Prompt(prompt);
                 AddFilters(choices);
             }
         }

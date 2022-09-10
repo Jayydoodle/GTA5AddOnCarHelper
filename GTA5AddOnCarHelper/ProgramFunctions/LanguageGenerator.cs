@@ -2,6 +2,7 @@
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -105,7 +106,11 @@ namespace GTA5AddOnCarHelper
 
             foreach (LanguageMapping mapping in filter.FilterList())
             {
-                AnsiConsole.MarkupLine(string.Format("\nNow Editing: [yellow]{0} - {1}[/]", mapping.Hash, mapping.Identifier));
+                string message = !string.IsNullOrEmpty(mapping.GameName)
+                    ? string.Format("\nNow Editing: [yellow]{0} - {1}[/]: [teal]GAME NAME[/] - [pink1]{2}[/]", mapping.Hash, mapping.Identifier, mapping.GameName)
+                    : string.Format("\nNow Editing: [yellow]{0} - {1}[/]", mapping.Hash, mapping.Identifier);
+
+                AnsiConsole.MarkupLine(message);
                 UpdateMappingFields(mapping, propsToEdit);
             }
         }
@@ -140,25 +145,26 @@ namespace GTA5AddOnCarHelper
 
             protected override void Prompt(IEnumerable<LanguageMapping> list)
             {
-                MultiSelectionPrompt<EditOptionChoice> prompt = new MultiSelectionPrompt<EditOptionChoice>();
+                MultiSelectionPrompt<EditOptionChoice<LanguageMapping>> prompt = new MultiSelectionPrompt<EditOptionChoice<LanguageMapping>>();
                 prompt.Title = "Select the options you wish to use to filter the list of mappings";
                 prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(new EditOptionChoice(EditOptionChoice.ConfigureSorting, nameof(ListFilter.OrderBys)));
+                prompt.AddChoice(EditOptionChoice<LanguageMapping>.OrderByOption());
+                prompt.AddChoice(new EditOptionChoice<LanguageMapping>("Show Missing Display Names Only", x => string.IsNullOrEmpty(x.DisplayName)));
 
                 List<string> mappingTypes = list.Where(x => !string.IsNullOrEmpty(x.MappingType)).Select(x => x.MappingType)
                                            .OrderBy(x => x).Distinct().ToList();
                 if (mappingTypes.Any())
                 {
-                    EditOptionChoice filterMappingTypes = new EditOptionChoice("Mapping Type", nameof(LanguageMapping.MappingType));
+                    EditOptionChoice<LanguageMapping> filterMappingTypes = new EditOptionChoice<LanguageMapping>("Mapping Type", nameof(LanguageMapping.MappingType));
 
                     mappingTypes.ForEach(x => filterMappingTypes.AddChild(x, x));
                     prompt.AddChoiceGroup(filterMappingTypes, filterMappingTypes.Children);
                 }
 
-                List<EditOptionChoice> choices = AnsiConsole.Prompt(prompt);
+                List<EditOptionChoice<LanguageMapping>> choices = AnsiConsole.Prompt(prompt);
                 AddFilters(choices);   
             }
         }
@@ -176,11 +182,13 @@ namespace GTA5AddOnCarHelper
             [TableColumn]
             [Protected]
             public string Hash { get; set; }
-            [TableColumn]
             [Protected]
             public string GameName { get; set; }
             [TableColumn]
             public string DisplayName { get; set; }
+            [TableColumn]
+            [Protected]
+            public string SourceMetaFile { get; set; }
 
             #endregion
 
@@ -201,6 +209,11 @@ namespace GTA5AddOnCarHelper
                 Dictionary<string, LanguageEntry> languageDictionary = LanguageDictionary.GetEntries();
                 List<VehicleMeta> vehicles = VehicleMetaFileManager.Instance.GetMetaFiles();
 
+                DirectoryInfo dir = Settings.GetDirectory(Settings.Node.VehicleMetaFilesPath);
+
+                if (!dir.Exists)
+                    throw new Exception(string.Format("Unable to find the [red]{0}[/].  Please update the path in the {1} file", Settings.Node.VehicleMetaFilesPath.ToString(), Settings.FileName));
+
                 vehicles.ForEach(x =>
                 {
                     string modelHash = x.HashOfModel;
@@ -212,6 +225,7 @@ namespace GTA5AddOnCarHelper
                         modelMapping.Identifier = x.Model;
                         modelMapping.GameName = x.GameName;
                         modelMapping.Hash = modelHash;
+                        modelMapping.SourceMetaFile = x.XML.SourceFileName.Replace(dir.FullName, string.Empty);
 
                         languageDictionary.TryGetValue(modelHash, out LanguageEntry modelEntry);
 
@@ -229,6 +243,7 @@ namespace GTA5AddOnCarHelper
                         makeMapping.MappingType = nameof(VehicleMeta.Make);
                         makeMapping.Identifier = x.Make;
                         makeMapping.Hash = makeHash;
+                        makeMapping.SourceMetaFile = x.XML.SourceFileName.Replace(dir.FullName, string.Empty);
 
                         languageDictionary.TryGetValue(makeHash, out LanguageEntry makeEntry);
 

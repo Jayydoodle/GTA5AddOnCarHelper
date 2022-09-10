@@ -14,6 +14,7 @@ namespace GTA5AddOnCarHelper
 
         static void Main(string[] args)
         {
+            Console.SetWindowSize(Console.LargestWindowWidth / 2, Console.LargestWindowHeight / 2);
             System.Console.OutputEncoding = Encoding.UTF8;
 
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
