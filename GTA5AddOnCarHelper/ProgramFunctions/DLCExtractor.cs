@@ -19,6 +19,8 @@ namespace GTA5AddOnCarHelper
         private const string DLCListInsertFormatString = "<Item>dlcpacks:{0}/{1}/</Item>";
         private const string DLCListOutputFileName = "GTA5_DLCListGenerator.txt";
         private const string VehicleDirectoryName = "Vehicles";
+        private const string OpenIVInstallersDirectoryName = "OpenIVInstallers";
+        private const string OpenIVInstallerSearchPattern = "*.oiv";
         private const string TempDirectoryName = "_temp";
 
         #endregion
@@ -176,6 +178,7 @@ namespace GTA5AddOnCarHelper
 
             DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath, sourceDirPrompt);
             DirectoryInfo vehicledir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName));
+            DirectoryInfo openIVDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, OpenIVInstallersDirectoryName));
 
             if (vehicledir.Exists && vehicledir.GetDirectories().Any()) 
             {
@@ -219,16 +222,31 @@ namespace GTA5AddOnCarHelper
             foreach (DirectoryInfo dir in tempDir.GetDirectories())
             {
                 FileInfo[] files = dir.GetFiles(DLCFileName, SearchOption.AllDirectories);
+                bool foundOpenIVFiles = false;
 
                 if (!files.Any())
                 {
-                    errorMessages.Add(string.Format("No dlc.rpf files found in the directory [red]{0}[/]\n", Markup.Escape(dir.FullName)));
-                    continue;
+                    files = dir.GetFiles(OpenIVInstallerSearchPattern, SearchOption.AllDirectories);
+
+                    if (files.Any())
+                    {
+                        if (!openIVDir.Exists)
+                            openIVDir = WorkingDirectory.CreateSubdirectory(OpenIVInstallersDirectoryName);
+
+                        foundOpenIVFiles = true;
+                    }
+                    else
+                    {
+                        errorMessages.Add(string.Format("No dlc.rpf files found in the directory [red]{0}[/]\n", Markup.Escape(dir.FullName)));
+                        continue;
+                    }
                 }
+
+                string destDir = foundOpenIVFiles ? openIVDir.FullName : vehicledir.FullName;
 
                 foreach (FileInfo file in files)
                 {
-                    string path = Path.Combine(vehicledir.FullName, file.Directory.Name);
+                    string path = Path.Combine(destDir, file.Directory.Name);
                     DirectoryInfo newDir = new DirectoryInfo(path);
 
                     if (newDir.Exists)
@@ -241,6 +259,7 @@ namespace GTA5AddOnCarHelper
             tempDir.Delete(true);
 
             int total = vehicledir.GetDirectories().Count();
+            int openIVInstallerTotal = openIVDir.Exists ? openIVDir.GetDirectories().Count() : 0;
 
             if (total > 0)
                 AnsiConsole.MarkupLine("Extraction complete. [green]{0}[/] vehicles have been extracted to the folder\n[blue]{1}[/]", total, vehicledir.FullName);
