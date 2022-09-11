@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static GTA5AddOnCarHelper.LanguageDictionary;
 using static GTA5AddOnCarHelper.PremiumDeluxeAutoManager;
@@ -17,6 +18,11 @@ namespace GTA5AddOnCarHelper
         #region Constants
 
         public const string OutputFileName = "GTA5_LanguageGenerator.txt";
+        public const string MakeDictionaryFileName = "VehicleMakes.txt";
+        private const string VehicleDownloadRegex = "(^[^-]*-)|((?i)by.*$)|(_)|([0-9]\\.[0-9])|((?i)v[0-9]\\.[0-9])|(\\[.*$)|([^\\x00-\\x7F]+)";
+
+        private const string VehicleMakesWebsite = "https://listcarbrands.com/car-brands-with-a-z/";
+        private const string VehicleMakesWebisteXPath = "//li";
 
         #endregion
 
@@ -47,6 +53,8 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Show Mappings", ShowMappings));
             listOptions.Add(new ListOption("Edit Mapping", EditMapping));
             listOptions.Add(new ListOption("Edit Mappings By Filter", EditMappingsByFilter));
+            listOptions.Add(new ListOption("Auto Assign Model Display Names", AutoAssignModelDisplayNames));
+            listOptions.Add(new ListOption("Auto Assign Make Display Names", AutoAssignMakeDisplayNames));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
             listOptions.Add(GetHelpOption());
@@ -67,6 +75,47 @@ namespace GTA5AddOnCarHelper
             }
 
             Mappings[mapping.Hash] = mapping;
+        }
+
+        private List<string> GetVehicleMakeDictionary()
+        {
+            List<string> makes = Utilities.ReadTextFromFile(WorkingDirectory, MakeDictionaryFileName);
+
+            if(!makes.Any())
+            {
+                string message = string.Format("\nUnable to build a vehicle make database from the file [teal]{0}[/].  " +
+                    "Would you like to rebuild the database from a web search?", MakeDictionaryFileName);
+
+                bool confirmation = Utilities.GetConfirmation(message);
+
+                if (!confirmation)
+                    return makes;
+
+                SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+                prompt.Title = string.Format("\nThe default website used to find vehicle makes is [orange1]{0}[/].  Would you like to use this site or enter your own?", VehicleMakesWebsite);
+
+                string[] choices = new string[] { "Use Default Site", "Use Custom Site (Advanced)" };
+                prompt.AddChoices(choices);
+
+                string choice = AnsiConsole.Prompt(prompt);
+
+                string site = VehicleMakesWebsite;
+                string xPath = "//li";
+
+                if (choice == choices[1])
+                {
+                    site = Utilities.GetInput("Enter the website to search for: ", x => !string.IsNullOrEmpty(x));
+                    xPath = Utilities.GetInput("Enter the xPath: ", x => !string.IsNullOrEmpty(x));
+                }
+
+                List<string> searchResults = WebSearch.GetResults(site, xPath);
+                string resultText = string.Join('\n', searchResults.Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x)));
+                Utilities.WriteToFile(WorkingDirectory, MakeDictionaryFileName, new StringBuilder(resultText));
+
+                makes = Utilities.ReadTextFromFile(WorkingDirectory, MakeDictionaryFileName);
+            }
+
+            return makes;
         }
 
         #endregion
@@ -115,6 +164,177 @@ namespace GTA5AddOnCarHelper
             }
         }
 
+        [Documentation(AutoAssignModelNamesSummary)]
+        private void AutoAssignModelDisplayNames()
+        {
+            DirectoryInfo downloadsDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath);
+
+            string message = string.Format("This action will attempt update all of the [orange1]Model[/] mappings with " +
+                "data pulled from the names of downloads in the [violet]{0}[/] directory.  How would you like to proceed?", downloadsDir.FullName);
+
+            string[] choices = new string[] { "Update All Models", "Update Models With Empty Display Names Only" };
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = message;
+            prompt.AddChoices(choices);
+
+            bool updateEmptyOnly = AnsiConsole.Prompt(prompt) == choices[1];
+
+            DirectoryInfo tempDir = DLCExtractor.Instance.EnsureTempDirectory();
+            DLCExtractor.Instance.ExtractDirectories();
+
+            if (!tempDir.GetDirectories().Any())
+            {
+                AnsiConsole.MarkupLine("No valid files were found in the directory [red]{0}[/].  Please extract your vehicle downloads from the " +
+                "gta-5 mods site into this directory to proceed.", downloadsDir.FullName);
+                return;
+            }
+
+            List<string> makes = GetVehicleMakeDictionary();
+
+            int successCount = 0;
+            HashSet<string> updatedHashes = new HashSet<string>();
+            StringBuilder debug = new StringBuilder();
+
+            foreach (DirectoryInfo dir in tempDir.GetDirectories())
+            {
+                FileInfo[] files = dir.GetFiles("*", SearchOption.AllDirectories);
+
+                foreach (FileInfo file in files)
+                {
+                    string directoryName = file.Directory.Name.Trim();
+                    string hash = Utilities.GetHash(file.Directory.Name.Trim());
+
+                    if (updatedHashes.Contains(hash))
+                        continue;
+
+                    Mappings.TryGetValue(hash, out LanguageMapping mapping);
+
+                    if (mapping == null)
+                        mapping = Mappings.Values.FirstOrDefault(x => directoryName.Contains(x.Identifier));
+
+                    if (mapping != null)
+                    {
+                        if (updatedHashes.Contains(mapping.Hash))
+                            continue;
+
+                        if (updateEmptyOnly && !string.IsNullOrEmpty(mapping.DisplayName))
+                            continue;
+
+                        string text = Regex.Replace(dir.Name, VehicleDownloadRegex, string.Empty);
+                        debug.AppendLine(text);
+
+                        List<string> pieces = text.SplitByCase().Split(new char[] { ' ', '-' }, StringSplitOptions.RemoveEmptyEntries).Where(x => x.Count() > 1).ToList();
+                        List<string> makeNames = makes.Where(x => pieces.Any(y => x.Contains(y, StringComparison.OrdinalIgnoreCase))).ToList();
+
+                        if (makeNames.Count() > 1)
+                            makeNames = makeNames.Where(x => x.SplitByCase().Split(new char[] { ' ', '-' }).ToList().All(y => pieces.Contains(y))).ToList();
+
+                        string makeToRemove = string.Empty;
+
+                        if (makeNames.Count() > 1)
+                        {
+                            message = string.Format("Multiple make names were found in the text: [teal]{0}[/]\nFor the model: " +
+                                "[yellow]{1}[/].\nWhich make name should be removed from the text?", text, mapping.Identifier);
+                            prompt = new SelectionPrompt<string>();
+                            prompt.Title = message;
+                            prompt.AddChoices(makeNames);
+
+                            makeToRemove = AnsiConsole.Prompt(prompt);
+                        }
+                        else { makeToRemove = makeNames.FirstOrDefault(); }
+
+                        if (!string.IsNullOrEmpty(makeToRemove))
+                        {
+                            if (text.Contains(makeToRemove.Replace("-", " ")))
+                                makeToRemove = makeToRemove.Replace("-", " ");
+
+                            if (!text.Contains(makeToRemove))
+                            {
+                                makeToRemove = makeToRemove.Split(new char[]{ ' ', '-' }, StringSplitOptions.RemoveEmptyEntries)
+                                                           .FirstOrDefault(x => text.Contains(x, StringComparison.OrdinalIgnoreCase));
+                            }
+
+                            if (!string.IsNullOrEmpty(makeToRemove) && text.Contains(makeToRemove) && !string.Equals(text, makeToRemove, StringComparison.OrdinalIgnoreCase))
+                            {
+                                text = text.Replace(string.Format("{0} ", makeToRemove), string.Empty, StringComparison.OrdinalIgnoreCase);
+                                text = text.Replace(makeToRemove, string.Empty, StringComparison.OrdinalIgnoreCase);
+                            }
+                        }
+
+                        text = text.SplitByCase();
+                        text = string.Format("{0}{1}", char.ToUpper(text[0]), text.Substring(1));
+
+                        debug.AppendLine(text);
+                        debug.AppendLine();
+
+                        mapping.DisplayName = text;
+                        successCount++;
+                        updatedHashes.Add(mapping.Hash);
+                    }
+                }
+            }
+
+            Utilities.WriteToFile(WorkingDirectory, "debug.txt", debug);
+            tempDir.Delete(true);
+
+            AnsiConsole.MarkupLine("A total of [pink1]{0}[/] models have had their display names updated successfully!", successCount);
+        }
+
+        [Documentation(AutoAssignMakeNamesSummary)]
+        private void AutoAssignMakeDisplayNames()
+        {
+            string message = string.Format("This action will attempt update all of the [orange1]Make[/] mappings with " +
+                "data pulled from the file [violet]{0}[/].  How would you like to proceed?", MakeDictionaryFileName);
+
+            string[] choices = new string[] { "Update All Makes", "Update Makes With Empty Display Names Only" };
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = message;
+            prompt.AddChoices(choices);
+
+            bool updateEmptyOnly = AnsiConsole.Prompt(prompt) == choices[1];
+
+            List<string> makes = GetVehicleMakeDictionary();
+            List<LanguageMapping> makeMappings = Mappings.Values.Where(x => x.MappingType == nameof(VehicleMeta.Make)).ToList();
+            int successCount = 0;
+
+            foreach (LanguageMapping mapping in makeMappings)
+            {
+                if (updateEmptyOnly && !string.IsNullOrEmpty(mapping.DisplayName))
+                    continue;
+
+                List<string> matches = makes.Where(x 
+                    => mapping.Identifier.Contains(x, StringComparison.OrdinalIgnoreCase)
+                    || !string.IsNullOrEmpty(mapping.DisplayName) && mapping.DisplayName.Contains(x, StringComparison.OrdinalIgnoreCase)
+                    || mapping.Identifier.Contains(new string(x.Where(y => char.IsLetterOrDigit(y)).ToArray()), StringComparison.OrdinalIgnoreCase)
+                    || mapping.Identifier.Replace(" ", string.Empty).Contains(new string(x.Where(y => char.IsLetterOrDigit(y)).ToArray()), StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+                if (!matches.Any() || matches.Any(x => string.Equals(x, mapping.DisplayName)))
+                    continue;
+
+                string displayName = string.Empty;
+
+                if(matches.Count > 1)
+                {
+                    message = string.Format("Multiple possible display names were found for the Make with identifier: [teal]{0}[/], which is correct?", mapping.Identifier);
+                    prompt = new SelectionPrompt<string>();
+                    prompt.Title = message;
+                    prompt.AddChoices(matches);
+
+                    displayName = AnsiConsole.Prompt(prompt);
+
+                }
+                else { displayName = matches.First(); }
+
+                mapping.DisplayName = displayName;
+                successCount++;
+            }
+
+            AnsiConsole.MarkupLine("A total of [pink1]{0}[/] makes have had their display names updated successfully!", successCount);
+        }
+
         [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
@@ -147,7 +367,7 @@ namespace GTA5AddOnCarHelper
             {
                 MultiSelectionPrompt<EditOptionChoice<LanguageMapping>> prompt = new MultiSelectionPrompt<EditOptionChoice<LanguageMapping>>();
                 prompt.Title = "Select the options you wish to use to filter the list of mappings";
-                prompt.InstructionsText = "[grey](Press [blue]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
+                prompt.InstructionsText = "[grey](Press [teal]<space>[/] to toggle an option, [green]<enter>[/] to begin)[/]\n";
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
@@ -218,7 +438,7 @@ namespace GTA5AddOnCarHelper
                 {
                     string modelHash = x.HashOfModel;
 
-                    if (!mappings.ContainsKey(modelHash))
+                    if (!string.IsNullOrEmpty(modelHash) && !mappings.ContainsKey(modelHash))
                     {
                         LanguageMapping modelMapping = new LanguageMapping();
                         modelMapping.MappingType = nameof(VehicleMeta.Model);
@@ -237,7 +457,7 @@ namespace GTA5AddOnCarHelper
 
                     string makeHash = x.HashOfMake;
 
-                    if (!mappings.ContainsKey(makeHash))
+                    if (!string.IsNullOrEmpty(makeHash) && !mappings.ContainsKey(makeHash))
                     {
                         LanguageMapping makeMapping = new LanguageMapping();
                         makeMapping.MappingType = nameof(VehicleMeta.Make);
@@ -277,7 +497,17 @@ namespace GTA5AddOnCarHelper
 
         private const string EditMappingsByFilterSummary = "Allows you to edit a list of language mappings after choosing from a list of pre-defined filters.  After choosing the desired " +
         "filters, mappings matching the filter criteria will be fed in one by one so that you can edit their display names.  While editing, if you leave " +
-        "the input blank and press [blue]<enter>[/], the current mapping will be skipped.";
+        "the input blank and press [teal]<enter>[/], the current mapping will be skipped.";
+
+        private const string AutoAssignModelNamesSummary = "Attempts to automatically assign display names to models by trying to extract the vehicle name that's normally included in the name " +
+        "of the downloaded file/folder from the gta5-mods site.  It tries to remove any unnecessary text using the Regex pattern [teal](^[[^-]]*-)[/][orange1]|[/][teal]((?i)by.*$)[/][orange1]|[/][teal](_)[/]" +
+        "[orange1]|[/][teal]([[0-9]]\\.[[0-9]])[/][orange1]|[/][teal]((?i)v[[0-9]]\\.[[0-9]])[/][orange1]|[/][teal](\\[[.*$)[/][orange1]|[/][teal]([[^\\x00-\\x7F]]+)[/] against each of the file names, and " +
+        "then attempts to remove the make name if present.  Each download file is associated to a particular model via a match on the extracted donwload folder containing a folder matching the " +
+        "model name (normally the folder containing dlc.rpf).";
+
+        private const string AutoAssignMakeNamesSummary = "Attempts to automatically assign display names to makes by doing a partial text match on the make's identifier or current display name " +
+        "against the list of vehicle makes defined in the file [violet]VehicleMakes.txt[/].  If this file does not exist or has been deleted, it can be regenerated via a web search against " +
+        "the default web page, or via a user-defined web scrape";
 
         private const string SaveChangesSummary = "Takes all of the mapping edits you've made and generates a file named " + OutputFileName + " that will be saved to the LanguageGenerator folder. " +
         "The inserts in this file can be copied to the [orange1]mods/update/update.rpf/x64/patch/data/lang[/] folder into the [orange1].cfg[/] file for your language to fix the display names " +

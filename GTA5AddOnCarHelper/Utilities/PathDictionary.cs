@@ -71,6 +71,11 @@ namespace GTA5AddOnCarHelper
             return value;
         }
 
+        public static Node GetNode(string nodeName)
+        {
+            return Enum.Parse<Node>(nodeName);
+        }
+
         public static Dictionary<Node, string> GetValues(Func<Node, bool> predicate = null)
         {
             Dictionary<Node, string> paths = new Dictionary<Node, string>();

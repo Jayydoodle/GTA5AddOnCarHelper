@@ -51,7 +51,7 @@ namespace GTA5AddOnCarHelper
         protected override List<ListOption> GetListOptions()
         {
             List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Open Working Directory", OpenWorkingDirectory));
+            listOptions.Add(new ListOption("Open Directory", OpenDirectory));
             listOptions.AddRange(base.GetListOptions());
 
             return listOptions;
@@ -61,10 +61,29 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
-        [Documentation("Opens the current working directory in the file system.")]
-        private void OpenWorkingDirectory()
+        [Documentation("Opens the selected directory in the file system.")]
+        private void OpenDirectory()
         {
-            Utilities.OpenDirectory(WorkingDirectory.FullName);
+            Dictionary<Settings.Node, string> paths = Settings.GetValues(x => x.ToString().Contains("Path") && x != Settings.Node.WorkingDirectoryPath);
+           
+            List<string> choices = new List<string>();
+            choices.Add(WorkingDirectoryName);
+            choices.AddRange(paths.Where(x => Directory.Exists(x.Value)).Select(x => x.Key.ToString()));
+
+            if (!paths.Any())
+            {
+                Utilities.OpenDirectory(Environment.CurrentDirectory);
+                return;
+            }
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = "Select the directory you want to open:";
+            prompt.AddChoices(choices);
+
+            string choice = AnsiConsole.Prompt(prompt);
+            DirectoryInfo dir = choice == WorkingDirectoryName ? WorkingDirectory : Settings.GetDirectory(Settings.GetNode(choice));
+
+            Utilities.OpenDirectory(dir.FullName);
         }
 
         private DirectoryInfo EnsureWorkingDirectory()

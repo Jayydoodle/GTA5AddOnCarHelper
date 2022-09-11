@@ -74,10 +74,33 @@ namespace CustomSpectreConsole
                 AnsiConsole.Write(path);
                 AnsiConsole.WriteLine();
             }
-            catch (Exception Ex)
+            catch (Exception e)
             {
-                Console.WriteLine(Ex.ToString());
+                if (e.GetType() == typeof(FileNotFoundException))
+                    AnsiConsole.MarkupLine("The file [red]{0}[/] does not exist.", fileName);
+                else
+                    Console.WriteLine(e.ToString());
             }
+        }
+
+        public static List<string> ReadTextFromFile(DirectoryInfo dir, string fileName)
+        {
+            string filePath = Path.Combine(dir.FullName, fileName);
+            List<string> textEntries = new List<string>();
+
+            try
+            {
+                textEntries = File.ReadLines(filePath).ToList();
+            }
+            catch (Exception e)
+            {
+                if (e.GetType() == typeof(FileNotFoundException))
+                    AnsiConsole.MarkupLine("The file [red]{0}[/] does not exist.", filePath);
+                else
+                    Console.WriteLine(e.ToString());
+            }
+
+            return textEntries;
         }
 
         public static void ArchiveFiles(DirectoryInfo dir, string searchPattern, List<string> fileNames = null)
@@ -340,7 +363,7 @@ namespace CustomSpectreConsole
         public static string GetHash(string input)
         {
             uint hash = CreateHash(input.ToLower());
-            return string.Format("0x{0}", hash.ToString("X8"));
+            return hash > 0 ? string.Format("0x{0}", hash.ToString("X8")) : string.Empty;
         }
 
         public static uint CreateHash(string input)

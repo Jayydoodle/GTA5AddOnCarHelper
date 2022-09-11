@@ -15,7 +15,7 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string DLCFileName = "dlc.rpf";
+        public const string DLCFileName = "dlc.rpf";
         private const string DLCListInsertFormatString = "<Item>dlcpacks:{0}/{1}/</Item>";
         private const string DLCListOutputFileName = "GTA5_DLCListGenerator.txt";
         private const string VehicleDirectoryName = "Vehicles";
@@ -64,7 +64,7 @@ namespace GTA5AddOnCarHelper
             return prefix;
         }
 
-        private List<string> ExtractFiles()
+        public List<string> ExtractFiles()
         {
             List<string> errorMessages = new List<string>();
 
@@ -119,7 +119,7 @@ namespace GTA5AddOnCarHelper
             return errorMessages;
         }
 
-        private List<string> ExtractDirectories()
+        public List<string> ExtractDirectories()
         {
             List<string> errorMessages = new List<string>();
 
@@ -167,6 +167,18 @@ namespace GTA5AddOnCarHelper
             return errorMessages;
         }
 
+        public DirectoryInfo EnsureTempDirectory()
+        {
+            DirectoryInfo tempDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, TempDirectoryName));
+
+            if (tempDir.Exists)
+                tempDir.Delete(true);
+
+            tempDir = WorkingDirectory.CreateSubdirectory(TempDirectoryName);
+
+            return tempDir;
+        }
+
         #endregion
 
         #region Private API: Prompt Functions
@@ -205,10 +217,7 @@ namespace GTA5AddOnCarHelper
 
             ListOption<List<string>> choice = AnsiConsole.Prompt<ListOption<List<string>>>(prompt);
 
-            DirectoryInfo tempDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, TempDirectoryName));
-
-            if (!tempDir.Exists)
-                tempDir = WorkingDirectory.CreateSubdirectory(TempDirectoryName);
+            DirectoryInfo tempDir = EnsureTempDirectory();
 
             List<string> errorMessages = choice.Function();
 
