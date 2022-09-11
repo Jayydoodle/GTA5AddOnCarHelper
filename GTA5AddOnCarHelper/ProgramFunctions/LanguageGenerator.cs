@@ -368,6 +368,7 @@ namespace GTA5AddOnCarHelper
                 prompt.PageSize = 20;
 
                 prompt.AddChoice(EditOptionChoice<LanguageMapping>.OrderByOption());
+                prompt.AddChoice(EditOptionChoice<LanguageMapping>.PartialTextMatchOption());
                 prompt.AddChoice(new EditOptionChoice<LanguageMapping>("Show Missing Display Names Only", x => string.IsNullOrEmpty(x.DisplayName)));
 
                 List<string> mappingTypes = list.Where(x => !string.IsNullOrEmpty(x.MappingType)).Select(x => x.MappingType)

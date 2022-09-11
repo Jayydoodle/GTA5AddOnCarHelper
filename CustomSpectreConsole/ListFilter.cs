@@ -10,14 +10,28 @@ namespace CustomSpectreConsole
 {
     public abstract class ListFilter
     {
+        #region Constants
+
+        public const string TextMatch = "TextMatch";
+
+        #endregion
+
+        #region Properties
+
         public List<string> OrderBys { get; set; }
         protected Dictionary<string, List<object>> Filters { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public ListFilter()
         {
             OrderBys = new List<string>();
             Filters = new Dictionary<string, List<object>>();
         }
+
+        #endregion
     }
 
     public class ListFilter<T> : ListFilter
@@ -26,6 +40,7 @@ namespace CustomSpectreConsole
 
         private List<Func<T, bool>> CustomFilters { get; set; }
         private IEnumerable<T> List { get; set; }
+        private Dictionary<string, string> TextMatchInput { get; set; }
 
         #endregion
 
@@ -35,6 +50,7 @@ namespace CustomSpectreConsole
         {
             List = list;
             CustomFilters = new List<Func<T, bool>>();
+            TextMatchInput = new Dictionary<string, string>();
 
             if(prompt)
                 Prompt(list);
@@ -61,6 +77,12 @@ namespace CustomSpectreConsole
                 if(choice.Value == nameof(OrderBys))
                 {
                     OrderBys = GetOrderBys();
+                    continue;
+                }
+
+                if(choice.Value == TextMatch)
+                {
+                    GetPartialTextMatchFilter();
                     continue;
                 }
 
@@ -131,7 +153,7 @@ namespace CustomSpectreConsole
         {
             IEnumerable<string> availableOrderBys = typeof(T).GetProperties().Where(x => x.HasAttribute<TableColumnAttribute>()).Select(x => x.Name);
 
-            string promptTitleFormat = "Select the {0} field you would like to order the list of vehicles by and press [bold orange1]<enter>[/], or select [bold green]{1}[/] to proceed";
+            string promptTitleFormat = "Select the {0} field you would like to order the list by and press [bold orange1]<enter>[/], or select [bold green]{1}[/] to proceed";
 
             SelectionPrompt<string> prompt = new SelectionPrompt<string>();
             prompt.Title = string.Format(promptTitleFormat, "first", GlobalConstants.SelectionOptions.Continue);
@@ -169,6 +191,92 @@ namespace CustomSpectreConsole
             }
 
             return orderBys;
+        }
+
+        protected void GetPartialTextMatchFilter()
+        {
+            List<PropertyInfo> props = typeof(T).GetProperties()
+                .Where(x => x.HasAttribute<TableColumnAttribute>())
+                .ToList();
+
+            MultiSelectionPrompt<string> prompt = new MultiSelectionPrompt<string>();
+            prompt.Title = "Select the fields you want to perform a partial text match against: ";
+            prompt.AddChoices(props.Select(x => x.Name));
+
+            List<string> choices = AnsiConsole.Prompt(prompt);
+
+            choices.ForEach(choice =>
+            {
+                PropertyInfo prop = props.First(x => x.Name == choice);
+                string input = GetPartialTextMatchInput(choice);
+                string matchType = GetPartialTextMatchTypeInput(choice, input);
+
+                if (matchType == "=")
+                    AddCustomFilter(x => double.Parse(prop.GetValue(x).ToString()) == double.Parse(input));
+                else if (matchType == ">")
+                    AddCustomFilter(x => double.Parse(prop.GetValue(x).ToString()) > double.Parse(input));
+                else if (matchType == "<")
+                    AddCustomFilter(x => double.Parse(prop.GetValue(x).ToString()) < double.Parse(input));
+                else if (matchType == nameof(string.StartsWith))
+                    AddCustomFilter(x => prop.GetValue(x).ToString().StartsWith(input));
+                else
+                    AddCustomFilter(x => prop.GetValue(x).ToString().Contains(input));
+            });
+        }
+
+        protected string GetPartialTextMatchInput(string fieldName)
+        {
+            string message = string.Format("Enter in the partial text match you want to perform on the [blue]{0}[/] field: ", fieldName);
+            string input = Utilities.GetInput(message, x => !string.IsNullOrEmpty(x));
+
+            return input;
+        }
+
+        protected string GetPartialTextMatchTypeInput(string fieldName, string input)
+        {
+            string matchTypeFormat = "{0} [pink1]{1}[/] '{2}'";
+
+            string[] matchTypeOptions = null;
+            bool isNumeric = double.TryParse(input, out double result);
+
+            if (isNumeric)
+            {
+                matchTypeOptions = new string[]
+                {
+                    string.Format(matchTypeFormat, fieldName, "=", input),
+                    string.Format(matchTypeFormat, fieldName, ">", input),
+                    string.Format(matchTypeFormat, fieldName, "<", input),
+                };
+            }
+            else
+            {
+                matchTypeOptions = new string[]
+                {
+                    string.Format(matchTypeFormat, fieldName, nameof(string.StartsWith), input),
+                    string.Format(matchTypeFormat, fieldName, nameof(string.Contains), input),
+                };
+            }
+
+            SelectionPrompt<string> typePrompt = new SelectionPrompt<string>();
+            typePrompt.Title = "\nSelect the type of text match you want to perform: ";
+            typePrompt.AddChoices(matchTypeOptions);
+
+            string matchType = AnsiConsole.Prompt(typePrompt);
+
+            if (isNumeric)
+            {
+                if (matchType == matchTypeOptions[0])
+                    return "=";
+                else if (matchType == matchTypeOptions[1])
+                    return ">";
+                else if (matchType == matchTypeOptions[2])
+                    return "<";
+            }
+
+            if (matchType == matchTypeOptions[0])
+                return nameof(string.StartsWith);
+            else
+                return nameof(string.Contains);
         }
 
         #endregion

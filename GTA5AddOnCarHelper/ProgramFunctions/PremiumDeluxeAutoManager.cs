@@ -99,19 +99,6 @@ namespace GTA5AddOnCarHelper
             return listOptions;
         }
 
-        private PremiumDeluxeListFilter GetPartialMatchFiler()
-        {
-            string prompt = string.Format("Enter in the text you would like to search for.  The list of vehicles " +
-                "produced will be based on a partial text on the [blue]{0}[/] or [blue]{1}[/]: ", nameof(PremiumDeluxeCar.Name), nameof(PremiumDeluxeCar.Model));
-
-            string input = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
-
-            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values, false);
-            filter.AddCustomFilter(x => (!string.IsNullOrEmpty(x.Model) && x.Model.Contains(input)) || (!string.IsNullOrEmpty(x.Name) && x.Name.Contains(input)));
-
-            return filter;
-        }
-
         private void UpdateCarFields(PremiumDeluxeCar car, List<PropertyInfo> props = null)
         {
             string oldModel = car.Model;
@@ -276,14 +263,7 @@ namespace GTA5AddOnCarHelper
         [Documentation(BulkEditVehiclesSummary)]
         private void BulkEditVehicles()
         {
-            SelectionPrompt<ListOption<PremiumDeluxeListFilter>> prompt = new SelectionPrompt<ListOption<PremiumDeluxeListFilter>>();
-            prompt.Title = "Select the method you wish to use to filter down the list of vehicles that will be edited";
-            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Filter By Class/Make", () => new PremiumDeluxeListFilter(Cars.Values)));
-            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>("Partial Text Match", GetPartialMatchFiler));
-            prompt.AddChoice(new ListOption<PremiumDeluxeListFilter>(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
-
-            ListOption<PremiumDeluxeListFilter> selection = AnsiConsole.Prompt(prompt);
-            PremiumDeluxeListFilter filter = selection.Function();
+            PremiumDeluxeListFilter filter = new PremiumDeluxeListFilter(Cars.Values);
 
             AnsiConsole.WriteLine();
             IEnumerable<PremiumDeluxeCar> filteredCars = filter.FilterList();
@@ -483,6 +463,7 @@ namespace GTA5AddOnCarHelper
                 prompt.PageSize = 20;
 
                 prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.OrderByOption());
+                prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.PartialTextMatchOption());
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                            .OrderBy(x => x).Distinct().ToList();

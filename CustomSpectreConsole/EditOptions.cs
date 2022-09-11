@@ -28,7 +28,6 @@ namespace CustomSpectreConsole
 
             IEnumerable<PropertyInfo> props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-
             if (!allowProtectedEdit)
                 props = props.Where(x => !x.HasAttribute<ProtectedAttribute>());
 
@@ -94,6 +93,7 @@ namespace CustomSpectreConsole
         #region Constants
 
         public const string ConfigureOrdering = "Use Custom Ordering";
+        public const string PartialTextMatch = "Use Partial Text Match";
 
         #endregion
     }
@@ -186,6 +186,11 @@ namespace CustomSpectreConsole
         public static EditOptionChoice<T> OrderByOption()
         {
             return new EditOptionChoice<T>(ConfigureOrdering, nameof(ListFilter.OrderBys));
+        }
+
+        public static EditOptionChoice<T> PartialTextMatchOption()
+        {
+            return new EditOptionChoice<T>(PartialTextMatch, ListFilter.TextMatch);
         }
 
         #endregion
