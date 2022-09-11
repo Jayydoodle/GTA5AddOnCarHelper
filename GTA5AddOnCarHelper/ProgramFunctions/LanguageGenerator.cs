@@ -190,6 +190,8 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
+            Dictionary<string, LanguageMapping> modelMappings = Mappings.Where(x => x.Value.MappingType == nameof(VehicleMeta.Model))
+                                                                        .ToDictionary(x => x.Key, x => x.Value);
             List<string> makes = GetVehicleMakeDictionary();
 
             int successCount = 0;
@@ -207,10 +209,10 @@ namespace GTA5AddOnCarHelper
                     if (updatedHashes.Contains(hash))
                         continue;
 
-                    Mappings.TryGetValue(hash, out LanguageMapping mapping);
+                    modelMappings.TryGetValue(hash, out LanguageMapping mapping);
 
                     if (mapping == null)
-                        mapping = Mappings.Values.FirstOrDefault(x => directoryName.Contains(x.Identifier));
+                        mapping = modelMappings.Values.FirstOrDefault(x => directoryName.Contains(x.Identifier));
 
                     if (mapping != null)
                     {
