@@ -20,6 +20,7 @@ namespace GTA5AddOnCarHelper
         private const string HandlingIdNode = "handlingId";
         private const string GameNameNode = "gameName";
         private const string VehicleMakeNameNode = "vehicleMakeName";
+        private const string VehicleClassNameNode = "vehicleClass";
 
         #endregion
 
@@ -29,6 +30,8 @@ namespace GTA5AddOnCarHelper
 
         [TableColumn]
         public string Make { get; set; }
+        [TableColumn]
+        public string Class { get; set; }
         [TableColumn]
         public string GameName { get; set; }
         [TableColumn]
@@ -76,6 +79,11 @@ namespace GTA5AddOnCarHelper
             if (vehicleMakeNameNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(VehicleMakeNameNode, xml);
 
+            XElement vehicleClassNameNode = TryGetNode<VehicleMeta>(xml, VehicleClassNameNode);
+
+            if (vehicleClassNameNode == null)
+                return GenerateMissingAttributeError<VehicleMeta>(VehicleClassNameNode, xml);
+
             return new VehicleMeta()
             {
                 Model = modelNode.Value,
@@ -83,6 +91,7 @@ namespace GTA5AddOnCarHelper
                 HandlingId = handlindIdNode.Value,  
                 GameName = gameNameNode.Value,
                 Make = vehicleMakeNameNode.Value,
+                Class = vehicleClassNameNode.Value,
                 XML = xml
             };
         }

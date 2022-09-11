@@ -153,6 +153,9 @@ namespace GTA5AddOnCarHelper
         {
             switch(node)
             {
+                case Node.GTA5FolderPath:
+                    return "Enter the path to your GTA 5 folder: ";
+
                 case Node.LanguageFilesPath:
                     return "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
 
@@ -174,6 +177,7 @@ namespace GTA5AddOnCarHelper
         public enum Node
         {
             APIKey,
+            GTA5FolderPath,
             WorkingDirectoryPath,
             VehicleMetaFilesPath,
             VehicleDownloadsPath,

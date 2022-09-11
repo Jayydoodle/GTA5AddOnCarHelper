@@ -12,6 +12,12 @@ namespace GTA5AddOnCarHelper
 {
     public class PremiumDeluxeCar
     {
+        #region Constants
+
+        public const string NoClass = "none";
+
+        #endregion
+
         #region Properties
 
         [TableColumnAttribute]
@@ -119,7 +125,7 @@ namespace GTA5AddOnCarHelper
             car.Model = meta.Model;
             car.GXT = meta.Model;
             car.Price = 0;
-            car.Class = "none";
+            car.Class = NoClass;
 
             return car;
         }

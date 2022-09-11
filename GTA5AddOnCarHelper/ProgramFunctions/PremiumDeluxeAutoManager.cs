@@ -22,6 +22,8 @@ namespace GTA5AddOnCarHelper
         #region Constants
 
         private const string PriceGeneratorOutputFileName = "price_generator_search_results.txt";
+        private const string PremiumDeluxeVehiclesFolderPath = "scripts/PremiumDeluxeMotorsport/Vehicles";
+        private const string PremiumDeluxeLanguagesFolderPath = "scripts/PremiumDeluxeMotorsport/Languages";
 
         #endregion
 
@@ -225,6 +227,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Bulk Edit Vehicles", BulkEditVehicles));
             listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
             listOptions.Add(new ListOption("Update Vehicle Prices From Web Search", GenerateVehiclePrices));
+            listOptions.Add(new ListOption("Auto Assign Class Names From Meta Files", AutoAssignClassNames));
             listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
             listOptions.Add(GetHelpOption());
 
@@ -422,6 +425,57 @@ namespace GTA5AddOnCarHelper
             option.Function(pricesByCar);
         }
 
+        [Documentation(AutoAssignClassNamesSummary)]
+        private void AutoAssignClassNames()
+        {
+            IEnumerable<PremiumDeluxeCar> carsToUpdate = Cars.Values;
+
+            Action filterCars = () =>
+            {
+                carsToUpdate = carsToUpdate.Where(x => x.Class == PremiumDeluxeCar.NoClass);
+            };
+
+            SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
+            prompt.Title = "This action will automatically assign class names from the source vehicles.meta " +
+            "files to the vehicless in the list.\nHow would you like to proceed?";
+            prompt.AddChoice(new ListOption("Assign Class Names To All Vehicles", null));
+            prompt.AddChoice(new ListOption("Assign Class Names To Vehicles With No Class ('none')", filterCars));
+            prompt.AddChoice(new ListOption("Cancel", () => throw new Exception(GlobalConstants.Commands.CANCEL)));
+
+            ListOption option = AnsiConsole.Prompt(prompt);
+
+            if (option.Function != null)
+                option.Function();
+
+            if (!carsToUpdate.Any())
+            {
+                AnsiConsole.WriteLine("\nNo cars were found.");
+                return;
+            }
+
+            List<VehicleMeta> metaFiles = VehicleMetaFileManager.Instance.GetMetaFiles();
+            int successCount = 0;
+
+            foreach(PremiumDeluxeCar car in carsToUpdate)
+            {
+                VehicleMeta meta = metaFiles.FirstOrDefault(x => x.Model == car.Model);
+
+                if (meta == null)
+                    continue;
+
+                try
+                {
+                    car.Class = meta.Class.Substring(meta.Class.LastIndexOf('_') + 1).ToLower();
+                    successCount++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            AnsiConsole.MarkupLine("A total of [pink1]{0}[/] vehicles have had their class name updated successfully!", successCount);
+        }
+
         [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
@@ -524,6 +578,8 @@ namespace GTA5AddOnCarHelper
         "each car that can be automatically or manually assigned.  It's recommended that you do this AFTER you've assigned realistic names to all of the " +
         "vehicles - either by manual entry or via the 'Update from Language Files' option.  Reason being, the search will be based on the MAKE and NAME fields, " +
         "and if there is strange data in those fields then the results will be inaccurate.";
+
+        private const string AutoAssignClassNamesSummary = "Pulls class name data from the associated vehicles.meta file and automatically assigns it to each add-on vehicle";
 
         private const string SaveChangesSummary = "Takes all of the vehicle edits you've made and generates [aqua].ini[/] files that will be saved to your " +
         "PremiumDeluxeAutoManager folder.  A separate .ini file will be generated for each unique 'class' you've assigned to each of your vehicles, which will " +
