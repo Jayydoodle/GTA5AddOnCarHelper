@@ -9,6 +9,7 @@ A tool for installing and managing add-on vehicles into GTA 5
 <b>DLC Extractor</b>
 <ul>
 <li>Takes a folder containing vehicle downloads in .zip, .rar, or .7zip format, and extracts all of the folders containing the dlc.rpf file into a single folder for easy copy/pasting into the mods/update/x64/dlcpacks folder</li>
+<li>Filters out any vehicles that are installed via .oiv installers into a separate folder for manual installation</li>
 <li>Automatically generates DLCList inserts from the extracted folders for easy copy/pasting into the DLCList.xml file</li>
 </ul>
 <b>Premium Deluxe Auto Manager</b>
