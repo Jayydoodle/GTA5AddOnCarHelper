@@ -23,6 +23,7 @@ A tool for installing and managing add-on vehicles into GTA 5
 <b>Language Generator</b>
 <ul>
 <li>Takes a folder full of .gxt2 files and attempts to match the hash values to the model and make names from imported vehicle.meta files.  Once mapped, you can edit the in-game display names of vehicle models and makes so that names are no longer missing or incorrect when entering vehicles</li>
+<li>Can automatically map missing vehicle make and model names in bulk by parsing data contained within the source download folder</li>
 </ul>
 <b>Vehicle Meta File Manager</b>
 <ul>
