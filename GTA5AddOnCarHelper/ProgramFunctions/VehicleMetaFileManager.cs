@@ -135,8 +135,7 @@ namespace GTA5AddOnCarHelper
         {
             Dictionary<string, T> metaFiles = new Dictionary<string, T>();
 
-            string prompt = "Enter the directory that contains the [green]" + Constants.Extentions.Meta + "[/] files: ";
-            DirectoryInfo dir = Settings.GetDirectory(Settings.Node.VehicleMetaFilesPath, prompt);
+            DirectoryInfo dir = Settings.GetDirectory(Settings.Node.VehicleMetaFilesPath);
             string fileName = new T().FileName;
 
             string regexFormat = string.Format("{0}{1}|((:?^|\\s){0}[\\(])", fileName, Constants.Extentions.Meta);

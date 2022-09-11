@@ -186,9 +186,7 @@ namespace GTA5AddOnCarHelper
         [Documentation(ExtractDLCFilesSummary)]
         private void ExtractDLCFiles()
         {
-            string sourceDirPrompt = "\nEnter the path to the directory containing all of your vehicle downloads: ";
-
-            DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath, sourceDirPrompt);
+            DirectoryInfo sourceDir = Settings.GetDirectory(Settings.Node.VehicleDownloadsPath);
             DirectoryInfo vehicledir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, VehicleDirectoryName));
             DirectoryInfo openIVDir = new DirectoryInfo(Path.Combine(WorkingDirectory.FullName, OpenIVInstallersDirectoryName));
 

@@ -16,7 +16,6 @@ namespace GTA5AddOnCarHelper
 
         public const string FileName = "settings.xml";
 
-        private const string DefaultRequiredPrompt = "Enter the directory: ";
         private const string DefaultNotRequiredPrompt = "Enter the directory (if nothing is entered, the current directory will be used): ";
         private const string WorkingDirectoryPrompt = "Enter in the working directory that this program will use to output generated files (if nothing is entered, the current directory will be used): ";
 
@@ -35,7 +34,7 @@ namespace GTA5AddOnCarHelper
             if (dir == null || !dir.Exists)
             {
                 if (string.IsNullOrEmpty(prompt))
-                    prompt = isRequired ? DefaultRequiredPrompt : DefaultNotRequiredPrompt;
+                    prompt = isRequired ? GetDefaultPromptByNode(node) : DefaultNotRequiredPrompt;
 
                 if (node == Node.WorkingDirectoryPath)
                 {
@@ -148,6 +147,24 @@ namespace GTA5AddOnCarHelper
             }
 
             return xml;
+        }
+
+        private static string GetDefaultPromptByNode(Node node)
+        {
+            switch(node)
+            {
+                case Node.LanguageFilesPath:
+                    return "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
+
+                case Node.VehicleDownloadsPath:
+                    return "\nEnter the path to the directory containing all of your vehicle downloads: ";
+
+                case Node.VehicleMetaFilesPath:
+                    return "Enter the directory that contains the [green]" + Constants.Extentions.Meta + "[/] files: ";
+
+                default:
+                    return "Enter the directory: ";
+            }
         }
 
         #endregion
