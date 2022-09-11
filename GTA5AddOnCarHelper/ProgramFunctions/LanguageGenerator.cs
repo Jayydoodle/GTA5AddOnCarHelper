@@ -194,7 +194,6 @@ namespace GTA5AddOnCarHelper
 
             int successCount = 0;
             HashSet<string> updatedHashes = new HashSet<string>();
-            StringBuilder debug = new StringBuilder();
 
             foreach (DirectoryInfo dir in tempDir.GetDirectories())
             {
@@ -222,7 +221,6 @@ namespace GTA5AddOnCarHelper
                             continue;
 
                         string text = Regex.Replace(dir.Name, VehicleDownloadRegex, string.Empty);
-                        debug.AppendLine(text);
 
                         List<string> pieces = text.SplitByCase().Split(new char[] { ' ', '-' }, StringSplitOptions.RemoveEmptyEntries).Where(x => x.Count() > 1).ToList();
                         List<string> makeNames = makes.Where(x => pieces.Any(y => x.Contains(y, StringComparison.OrdinalIgnoreCase))).ToList();
@@ -265,9 +263,6 @@ namespace GTA5AddOnCarHelper
                         text = text.SplitByCase();
                         text = string.Format("{0}{1}", char.ToUpper(text[0]), text.Substring(1));
 
-                        debug.AppendLine(text);
-                        debug.AppendLine();
-
                         mapping.DisplayName = text;
                         successCount++;
                         updatedHashes.Add(mapping.Hash);
@@ -275,7 +270,6 @@ namespace GTA5AddOnCarHelper
                 }
             }
 
-            Utilities.WriteToFile(WorkingDirectory, "debug.txt", debug);
             tempDir.Delete(true);
 
             AnsiConsole.MarkupLine("A total of [pink1]{0}[/] models have had their display names updated successfully!", successCount);
