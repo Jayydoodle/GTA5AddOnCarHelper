@@ -231,6 +231,101 @@ namespace GTA5AddOnCarHelper
             return true;
         }
 
+        private ConcurrentDictionary<string, List<int>> GeneratePricesFastExecution(ProgressContext ctx, List<PremiumDeluxeCar> carsToUpdate)
+        {
+            ConcurrentDictionary<string, List<int>> pricesByCar = new ConcurrentDictionary<string, List<int>>();
+            var task = ctx.AddTask(string.Format("Gathering {0} Search Results", GlobalConstants.MarkUp.Google), true, carsToUpdate.Count());
+            StringBuilder sb = new StringBuilder();
+
+            while (!ctx.IsFinished)
+            {
+                Object _lock = new Object();
+
+                Parallel.ForEach(carsToUpdate, car =>
+                {
+                    if (string.IsNullOrEmpty(car.Make) || string.IsNullOrEmpty(car.Name))
+                    {
+                        lock (_lock)
+                        {
+                            task.Increment(1);
+                            ctx.Refresh();
+                        }
+
+                        return;
+                    }
+
+                    string query = string.Format("How much is a {0} {1}", car.Make, car.Name);
+                    List<string> results = WebSearch.GetGoogleResults(query, "$");
+
+                    List<int> resultGroup = Utilities.ParseCurrencyFromText(results);
+
+                    pricesByCar.TryAdd(car.Model, resultGroup);
+
+                    lock (_lock)
+                    {
+                        sb.AppendLine(query);
+                        results.ForEach(x => sb.AppendLine(x.ToString()));
+                        sb.AppendLine();
+
+                        task.Increment(1);
+                        ctx.Refresh();
+                    }
+                });
+
+                if (sb.Length > 0)
+                    Utilities.WriteToFile(WorkingDirectory, PriceGeneratorOutputFileName, sb);
+
+                task.StopTask();
+            }
+
+            return pricesByCar;
+        }
+
+        private ConcurrentDictionary<string, List<int>> GeneratePricesSafeExecution(ProgressContext ctx, List<PremiumDeluxeCar> carsToUpdate)
+        {
+            ConcurrentDictionary<string, List<int>> pricesByCar = new ConcurrentDictionary<string, List<int>>();
+            var task = ctx.AddTask(string.Format("Gathering {0} Search Results", GlobalConstants.MarkUp.Google), true, carsToUpdate.Count());
+            StringBuilder sb = new StringBuilder();
+            Random rnd = new Random();
+
+            while (!ctx.IsFinished)
+            {
+                foreach (PremiumDeluxeCar car in carsToUpdate)
+                {
+                    if (string.IsNullOrEmpty(car.Make) || string.IsNullOrEmpty(car.Name))
+                    {
+                        task.Increment(1);
+                        ctx.Refresh();
+                        continue;
+                    }
+
+                    string query = string.Format("How much is a {0} {1}", car.Make, car.Name);
+                    List<string> results = WebSearch.GetGoogleResults(query, "$");
+
+                    List<int> resultGroup = Utilities.ParseCurrencyFromText(results);
+
+                    pricesByCar.TryAdd(car.Model, resultGroup);
+
+                    sb.AppendLine(query);
+                    results.ForEach(x => sb.AppendLine(x.ToString()));
+                    sb.AppendLine();
+
+                    task.Increment(1);
+                    ctx.Refresh();
+
+                    int sleepAmount = rnd.Next(5, 12) * 1000;
+                    Thread.Sleep(sleepAmount);
+                };
+
+                if (sb.Length > 0)
+                    Utilities.WriteToFile(WorkingDirectory, PriceGeneratorOutputFileName, sb);
+
+                task.StopTask();
+            }
+
+            return pricesByCar;
+        }
+
         #endregion
 
         #region Private API: Prompt Functions
@@ -404,8 +499,7 @@ namespace GTA5AddOnCarHelper
         {
             List<PremiumDeluxeCar> carsToUpdate = Cars.Values.ToList();
 
-            Action filterCars = () =>
-            {
+            Action filterCars = () => {
                 carsToUpdate = carsToUpdate.Where(x => x.Price <= 0).ToList();
             };
 
@@ -421,7 +515,19 @@ namespace GTA5AddOnCarHelper
             if (introOption.Function != null)
                 introOption.Function();
 
-            StringBuilder sb = new StringBuilder();
+            SelectionPrompt<ListOption<string>> executionTypePrompt = new SelectionPrompt<ListOption<string>>();
+            executionTypePrompt.Title = string.Format("Web scraping {0} results can sometimes result in a [red]temporary IP ban[/] that will render this utility useless.  Here you can " +
+            "select how quickly you want to perform the search in order to limit the possibility of an IP ban.  [green]Fast[/] will complete the search within a few seconds, but repeated " +
+            "use will end up in an IP ban.  [blue]Safe[/] will reduce the speed of the searches so that a ban is unlikely, but will take around 10 minutes per 100 vehicles.  With either " +
+            "option it is recommended that you use a VPN if you have one avaible.  Which do you choose?", GlobalConstants.MarkUp.Google);
+            executionTypePrompt.AddChoice(new ListOption<string>("Fast", () => nameof(GeneratePricesFastExecution)));
+            executionTypePrompt.AddChoice(new ListOption<string>("Safe", () => nameof(GeneratePricesSafeExecution)));
+            executionTypePrompt.AddChoice(ListOption<string>.CancelOption());
+
+            ListOption<string> executionTypeOption = AnsiConsole.Prompt(executionTypePrompt);
+            string selection = executionTypeOption.Function();
+            MethodInfo method = GetType().GetMethod(selection, BindingFlags.Instance|BindingFlags.NonPublic);
+
             ConcurrentDictionary<string, List<int>> pricesByCar = new ConcurrentDictionary<string, List<int>>();
 
             ProgressColumn[] columns = new ProgressColumn[]
@@ -436,47 +542,14 @@ namespace GTA5AddOnCarHelper
             .Columns(columns)
             .Start(ctx =>
             {
-                var task = ctx.AddTask(string.Format("Gathering {0} Search Results", GlobalConstants.MarkUp.Google), true, carsToUpdate.Count());
-
-                while (!ctx.IsFinished)
+                try
                 {
-                    Object _lock = new Object();
-
-                    Parallel.ForEach(carsToUpdate, car =>
-                    {
-                        if (string.IsNullOrEmpty(car.Make) || string.IsNullOrEmpty(car.Name))
-                        {
-                            lock (_lock) 
-                            {
-                                task.Increment(1);
-                                ctx.Refresh();
-                            }
-
-                            return;
-                        }
-
-                        string query = string.Format("How much is a {0} {1}", car.Make, car.Name);
-                        List<string> results = WebSearch.GetGoogleResults(query, "$");
-
-                        List<int> resultGroup = Utilities.ParseCurrencyFromText(results);
-
-                        pricesByCar.TryAdd(car.Model, resultGroup);
-
-                        lock (_lock)
-                        {
-                            sb.AppendLine(query);
-                            results.ForEach(x => sb.AppendLine(x.ToString()));
-                            sb.AppendLine();
-
-                            task.Increment(1);
-                            ctx.Refresh();
-                        }
-                    });
-
-                    if (sb.Length > 0)
-                        Utilities.WriteToFile(WorkingDirectory, PriceGeneratorOutputFileName, sb);
-
-                    task.StopTask();
+                    pricesByCar = method.Invoke(this, new object[] { ctx, carsToUpdate }) as ConcurrentDictionary<string, List<int>>;
+                }
+                catch (Exception e)
+                {
+                    AnsiConsole.WriteLine(e.Message);
+                    return;
                 }
             });
 
@@ -486,15 +559,15 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>> prompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>>();
-            prompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
+            SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>> assignmentPrompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>>();
+            assignmentPrompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
             "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
 
-            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
-            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
-            prompt.AddChoice(ListOption<ConcurrentDictionary<string, List<int>>, bool>.CancelOption());
+            assignmentPrompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
+            assignmentPrompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
+            assignmentPrompt.AddChoice(ListOption<ConcurrentDictionary<string, List<int>>, bool>.CancelOption());
 
-            ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(prompt);
+            ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(assignmentPrompt);
             option.Function(pricesByCar);
         }
 
