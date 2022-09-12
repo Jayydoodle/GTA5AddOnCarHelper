@@ -39,5 +39,10 @@ namespace CustomSpectreConsole
         {
             public const string AmericanCurrency = "\\$[\\s]?([\\d\\.\\,]+)[\\s]*(thousand|million|billion|trillion)?";
         }
+
+        public static class MarkUp
+        {
+            public const string Google = "[blue]G[/][red]o[/][yellow]o[/][blue]g[/][green]l[/][red]e[/]";
+        }
     }
 }

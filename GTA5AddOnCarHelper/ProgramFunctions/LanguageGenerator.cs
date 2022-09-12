@@ -110,6 +110,8 @@ namespace GTA5AddOnCarHelper
 
                 List<string> searchResults = WebSearch.GetResults(site, xPath);
                 string resultText = string.Join('\n', searchResults.Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x)));
+
+                Console.WriteLine();
                 Utilities.WriteToFile(WorkingDirectory, MakeDictionaryFileName, new StringBuilder(resultText));
 
                 makes = Utilities.ReadTextFromFile(WorkingDirectory, MakeDictionaryFileName);

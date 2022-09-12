@@ -54,6 +54,24 @@ namespace GTA5AddOnCarHelper
             return dir;
         }
 
+        public static DirectoryInfo GetDirectoryFromNode(Node node, string expectedPath)
+        {
+            DirectoryInfo dir = Settings.GetDirectory(node);
+            string path = Path.Combine(dir.FullName, expectedPath);
+            DirectoryInfo targetDir = new DirectoryInfo(path);
+
+            while (!targetDir.Exists)
+            {
+                string message = string.Format("The target folder is expected at the path [red]{1}[/], but the directory does " +
+                "not exist.  Please enter the correct path: ", path);
+
+                path = Utilities.GetInput(message, x => !string.IsNullOrEmpty(x));
+                targetDir = new DirectoryInfo(path);
+            }
+
+            return targetDir;
+        }
+
         public static string GetSetting(Node node, string prompt = null)
         {
             string value = GetValue(node);

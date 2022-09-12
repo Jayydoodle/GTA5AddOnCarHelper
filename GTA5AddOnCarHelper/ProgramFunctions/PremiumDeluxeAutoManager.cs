@@ -9,8 +9,10 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using static GTA5AddOnCarHelper.LanguageDictionary;
 using static System.Net.WebRequestMethods;
@@ -21,7 +23,8 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        private const string PriceGeneratorOutputFileName = "price_generator_search_results.txt";
+        private const string LanguageFileInsertFileName = "_language_file_inserts.txt";
+        private const string PriceGeneratorOutputFileName = "_price_generator_search_results.txt";
         private const string PremiumDeluxeVehiclesFolderPath = "scripts/PremiumDeluxeMotorsport/Vehicles";
         private const string PremiumDeluxeLanguagesFolderPath = "scripts/PremiumDeluxeMotorsport/Languages";
 
@@ -30,6 +33,30 @@ namespace GTA5AddOnCarHelper
         #region Properties
 
         private Dictionary<string, PremiumDeluxeCar> Cars { get; set; }
+
+        private DirectoryInfo _premiumDeluxeVehiclesFolder;
+        private DirectoryInfo PremiumDeluxeVehiclesFolder
+        {
+            get
+            {
+                if (_premiumDeluxeVehiclesFolder == null)
+                    _premiumDeluxeVehiclesFolder = Settings.GetDirectoryFromNode(Settings.Node.GTA5FolderPath, PremiumDeluxeVehiclesFolderPath);
+
+                return _premiumDeluxeVehiclesFolder;
+            }
+        }
+
+        private DirectoryInfo _premiumDeluxeLangFolder;
+        private DirectoryInfo PremiumDeluxeLangFolder
+        {
+            get
+            {
+                if (_premiumDeluxeLangFolder == null)
+                    _premiumDeluxeLangFolder = Settings.GetDirectoryFromNode(Settings.Node.GTA5FolderPath, PremiumDeluxeLanguagesFolderPath);
+              
+                return _premiumDeluxeLangFolder;
+            }
+        }
 
         #endregion
 
@@ -40,16 +67,16 @@ namespace GTA5AddOnCarHelper
         {
             Initialize();
             Cars = PremiumDeluxeCar.GetFromIniDirectory(WorkingDirectory);
-            bool importMeta = false;
+            bool import = false;
 
             if (Cars.Any())
             {
                 AnsiConsole.MarkupLine("Imported [blue]{0}[/] vehicles from the directory [blue]{1}[/]\n", Cars.Count(), WorkingDirectoryName);
                 string prompt = string.Format("Would you like to check for new [green]{0}[/] files to add to this list?", Constants.FileNames.VehicleMeta + Constants.Extentions.Meta);
 
-                importMeta = Utilities.GetConfirmation(prompt);
+                import = Utilities.GetConfirmation(prompt);
 
-                if(importMeta)
+                if(import)
                 {
                     Dictionary<string, PremiumDeluxeCar> metaCars = PremiumDeluxeCar.GetFromMetaFiles();
                     int importCount = 0;
@@ -71,12 +98,22 @@ namespace GTA5AddOnCarHelper
                 string prompt = String.Format("No valid [blue]{0}[/] files were found in the directory [blue]{1}[/].  " +
                     "Would you like to import [blue]{2}[/] files?", Constants.Extentions.Ini, WorkingDirectoryName, Constants.FileNames.VehicleMeta + Constants.Extentions.Meta);
 
-                importMeta = Utilities.GetConfirmation(prompt);
+                import = Utilities.GetConfirmation(prompt);
 
-                if (!importMeta)
-                    return;
+                if (import)
+                {
+                    Cars = PremiumDeluxeCar.GetFromMetaFiles();
+                }
+                else
+                {
+                    prompt = String.Format("Would you like to import [blue]{0}[/] files from the [yellow]{1}[/] folder in GTA 5 directory?"
+                    , Constants.Extentions.Ini, WorkingDirectoryName, PremiumDeluxeVehiclesFolderPath);
 
-                Cars = PremiumDeluxeCar.GetFromMetaFiles();
+                    import = Utilities.GetConfirmation(prompt);
+
+                    if (import)
+                        ImportFromGTA5Directory();
+                }
             }
 
             if (Cars.Any())
@@ -94,6 +131,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Show All Vehicles", ShowAllVehicles));
             listOptions.Add(new ListOption("Edit A Vehicle", EditVehicle));
             listOptions.Add(new ListOption("Edit Multiple Vehicles", GetBulkEditOptions));
+            listOptions.Add(new ListOption("Import Vehicles From GTA 5 Folder", ImportFromGTA5Directory));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
             listOptions.Add(GetHelpOption());
@@ -217,6 +255,24 @@ namespace GTA5AddOnCarHelper
 
             EditOptions<PremiumDeluxeCar> options = new EditOptions<PremiumDeluxeCar>();
             UpdateCarFields(car, options.GetEditableProperties());
+        }
+
+        [Documentation(ImportFromGTA5DirectorySummary)]
+        private void ImportFromGTA5Directory()
+        {
+            Dictionary<string, PremiumDeluxeCar> cars = PremiumDeluxeCar.GetFromIniDirectory(PremiumDeluxeVehiclesFolder);
+            int importCount = 0;
+
+            foreach (KeyValuePair<string, PremiumDeluxeCar> pair in cars)
+            {
+                if (!Cars.ContainsKey(pair.Key))
+                {
+                    Cars.Add(pair.Key, pair.Value);
+                    importCount++;
+                }
+            }
+
+            AnsiConsole.MarkupLine("Imported [blue]{0}[/] new vehicles\n", importCount);
         }
 
         [Documentation(GetBulkEditOptionsSummary)]
@@ -346,6 +402,25 @@ namespace GTA5AddOnCarHelper
         [Documentation(GenerateVehiclePricesSummary)]
         private void GenerateVehiclePrices()
         {
+            List<PremiumDeluxeCar> carsToUpdate = Cars.Values.ToList();
+
+            Action filterCars = () =>
+            {
+                carsToUpdate = carsToUpdate.Where(x => x.Price <= 0).ToList();
+            };
+
+            SelectionPrompt<ListOption> introPrompt = new SelectionPrompt<ListOption>();
+            introPrompt.Title = string.Format("This action will automatically assign prices to the " +
+            "vehicles in the list from a {0} search.  How would you like to proceed?", GlobalConstants.MarkUp.Google);
+            introPrompt.AddChoice(new ListOption("Assign Prices To Vehicles With Price = 0", filterCars));
+            introPrompt.AddChoice(new ListOption("Assign Prices To All Vehicles", null));
+            introPrompt.AddChoice(ListOption.CancelOption());
+
+            ListOption introOption = AnsiConsole.Prompt(introPrompt);
+
+            if (introOption.Function != null)
+                introOption.Function();
+
             StringBuilder sb = new StringBuilder();
             ConcurrentDictionary<string, List<int>> pricesByCar = new ConcurrentDictionary<string, List<int>>();
 
@@ -361,16 +436,14 @@ namespace GTA5AddOnCarHelper
             .Columns(columns)
             .Start(ctx =>
             {
-                var task = ctx.AddTask("Gathering [blue]G[/][red]o[/][yellow]o[/][blue]g[/][green]l[/][red]e[/] Search Results", true, Cars.Count);
+                var task = ctx.AddTask(string.Format("Gathering {0} Search Results", GlobalConstants.MarkUp.Google), true, carsToUpdate.Count());
 
                 while (!ctx.IsFinished)
                 {
                     Object _lock = new Object();
 
-                    Parallel.ForEach(Cars, pair =>
+                    Parallel.ForEach(carsToUpdate, car =>
                     {
-                        PremiumDeluxeCar car = pair.Value;
-
                         if (string.IsNullOrEmpty(car.Make) || string.IsNullOrEmpty(car.Name))
                         {
                             lock (_lock) 
@@ -415,11 +488,11 @@ namespace GTA5AddOnCarHelper
 
             SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>> prompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>>();
             prompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
-                "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
+            "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
 
             prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
             prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
-            prompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Cancel", (s) => throw new Exception(GlobalConstants.Commands.CANCEL)));
+            prompt.AddChoice(ListOption<ConcurrentDictionary<string, List<int>>, bool>.CancelOption());
 
             ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(prompt);
             option.Function(pricesByCar);
@@ -440,7 +513,7 @@ namespace GTA5AddOnCarHelper
             "files to the vehicless in the list.\nHow would you like to proceed?";
             prompt.AddChoice(new ListOption("Assign Class Names To All Vehicles", null));
             prompt.AddChoice(new ListOption("Assign Class Names To Vehicles With No Class ('none')", filterCars));
-            prompt.AddChoice(new ListOption("Cancel", () => throw new Exception(GlobalConstants.Commands.CANCEL)));
+            prompt.AddChoice(ListOption.CancelOption());
 
             ListOption option = AnsiConsole.Prompt(prompt);
 
@@ -479,22 +552,65 @@ namespace GTA5AddOnCarHelper
         [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
+            List<PremiumDeluxeLanguageFile> langFiles = PremiumDeluxeLanguageFile.GetAll(PremiumDeluxeLangFolder);
+
+            SelectionPrompt<ListOption<string>> prompt = new SelectionPrompt<ListOption<string>>();
+            prompt.Title = "\nSelect your target language: ";
+            prompt.AddChoice(ListOption<string>.CancelOption());
+            prompt.AddChoices(langFiles.Select(x => new ListOption<string>(x.DisplayName, () => x.SourceFileName)));
+
+            ListOption<string> choice = AnsiConsole.Prompt(prompt);
+            string languageSelection = choice.Function();
+
+            PremiumDeluxeLanguageFile selectedFile = langFiles.FirstOrDefault(x => x.SourceFileName == languageSelection);
+
             Dictionary<string, List<PremiumDeluxeCar>> carsByClass = Cars.Values.GroupBy(x => x.Class)
                                                                      .ToDictionary(x => x.Key, x => x.OrderBy(y => y.Model).ToList());
-
-            Utilities.ArchiveFiles(WorkingDirectory, "*" + Constants.Extentions.Ini, carsByClass.Keys.Select(x => x + Constants.Extentions.Ini).ToList());
+            Utilities.ArchiveDirectory(WorkingDirectory);
 
             foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
                 StringBuilder content = new StringBuilder();
-
-                pair.Value.ForEach(car =>
-                {
-                    content.AppendLine(car.Save());
-                });
-
+                pair.Value.ForEach(car => content.AppendLine(car.Save()));
                 Utilities.WriteToFile(WorkingDirectory, string.Format("{0}{1}", pair.Key, Constants.Extentions.Ini), content);
             };
+
+            TextInfo myTI = CultureInfo.CurrentCulture.TextInfo;
+
+            Dictionary<string, string> classes = carsByClass.Select(x => x.Key)
+                                                 .Where(x => !selectedFile.VehicleClasses.ContainsKey(x))
+                                                 .ToDictionary(x => x, x => string.Format("\"{0}\"", myTI.ToTitleCase(x.SplitByCase())));
+
+            StringBuilder inserts = new StringBuilder();
+
+            foreach(KeyValuePair<string, string> pair in classes)
+                inserts.AppendLine(string.Format("{0} {1}", pair.Key, pair.Value));
+
+            Utilities.WriteToFile(WorkingDirectory, LanguageFileInsertFileName, inserts);
+
+            string message = string.Format("\nYour updates have been saved to the [violet]{0}[/] folder successfully. Would you like " +
+            "to automatically copy the changes to your [violet]GTA 5 Folder[/]?  This action will [red]overwrite[/] any existing [green].ini[/] files in the " +
+            "[yellow]{1}[/] folder, and will [red]overwrite[/] the [green]{2}[/] file in the [yellow]{3}[/] folder.  This action [red]cannot be undone![/].\n\nYou may also do this manually " +
+            "by copying the generated [green].ini[/] files into the [yellow]{1}[/] folder and by copying the inserts in the [green]{4}[/] file into the [green]{2}[/] file in " +
+            "the [yellow]{3}[/] folder.  If there are no inserts in the [green]{4}[/] file, it means the [green]{2}[/] file already has them all."
+            , WorkingDirectoryName, PremiumDeluxeVehiclesFolderPath, languageSelection, PremiumDeluxeLanguagesFolderPath, LanguageFileInsertFileName);
+
+            bool copyToGTAGolder = Utilities.GetConfirmation(message);
+
+            if (!copyToGTAGolder)
+                return;
+
+            foreach (KeyValuePair<string, string> pair in classes)
+            {
+                if (!selectedFile.VehicleClasses.ContainsKey(pair.Key))
+                    selectedFile.VehicleClasses.Add(pair.Key, pair.Value);
+            };
+
+            StringBuilder fileContent = selectedFile.Save();
+            FileInfo sourceFile = new FileInfo(selectedFile.SourceFilePath);
+            Utilities.WriteToFile(sourceFile.Directory, selectedFile.SourceFileName, fileContent);
+            Console.WriteLine();
+            Utilities.CopyFilesToDirectory(WorkingDirectory, PremiumDeluxeVehiclesFolder, "*" + Constants.Extentions.Ini, true);
         }
 
         #endregion
@@ -588,6 +704,9 @@ namespace GTA5AddOnCarHelper
         "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the [orange1].cfg[/] language file of your choice.  Every time 'SaveChanges' " +
         "is selected, any existing .ini files in the PremiumDeluxeManager folder will be archived so that changes can easily be reversed.  [red bold]Don't forget " +
         "to save changes before exiting the Premium Deluxe Auto Manager menu![/]";
+
+        private const string ImportFromGTA5DirectorySummary = "Finds the .ini files in the [teal]Grand Theft Auto V\\scripts\\PremiumDeluxeMotorsport\\Vehicles[/] folder " +
+        "and imports the vehicles inside each file into the manager for editing";
 
         #endregion
     }

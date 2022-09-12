@@ -70,9 +70,8 @@ namespace CustomSpectreConsole
                 TextPath path = new TextPath(fileName);
                 path.LeafColor(Color.Green);
 
-                AnsiConsole.Write("\nContent was successfully written to the file: ");
+                AnsiConsole.Write("Content was successfully written to the file: ");
                 AnsiConsole.Write(path);
-                AnsiConsole.WriteLine();
             }
             catch (Exception e)
             {
@@ -174,6 +173,34 @@ namespace CustomSpectreConsole
                     CopyDirectory(subDir.FullName, newDestinationDir, true);
                 }
             }
+        }
+
+        public static void CopyFilesToDirectory(DirectoryInfo sourceDir, DirectoryInfo destinationDir, 
+        string searchPattern = null, bool allowOverWrite = false,  bool recursive = false, bool writeToConsole = true)
+        {
+            if (!sourceDir.Exists)
+                throw new DirectoryNotFoundException($"Source directory not found: {sourceDir.FullName}");
+
+            foreach (FileInfo file in sourceDir.GetFiles(searchPattern))
+            {
+                string targetFilePath = Path.Combine(destinationDir.FullName, file.Name);
+                file.CopyTo(targetFilePath, allowOverWrite);
+            }
+
+            if (recursive)
+            {
+                DirectoryInfo[] dirs = sourceDir.GetDirectories();
+
+                foreach (DirectoryInfo subDir in dirs)
+                {
+                    CopyFilesToDirectory(subDir, destinationDir, searchPattern, allowOverWrite, recursive, false);
+                }
+            }
+
+            if(!writeToConsole) { return; }
+
+            AnsiConsole.MarkupLine("The [green]{0}[/] files from the source directory: [teal]{1}[/]\nHave been copied to the directory [orange1]{2}[/] successfully\n", 
+            searchPattern, sourceDir.FullName, destinationDir.FullName);
         }
 
         public static void ExtractFile(FileInfo file, string destinationPath, string searchPattern = null)

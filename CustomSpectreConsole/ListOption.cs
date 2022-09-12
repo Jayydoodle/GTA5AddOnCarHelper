@@ -33,6 +33,11 @@ namespace CustomSpectreConsole
 
         #region Public API
 
+        public static ListOption CancelOption(string text = null)
+        {
+            return new ListOption(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
+        }
+
         public override string ToString()
         {
             return DisplayName;
@@ -58,6 +63,15 @@ namespace CustomSpectreConsole
         }
 
         #endregion
+
+        #region Public API
+
+        public static new ListOption<T> CancelOption(string text = null)
+        {
+            return new ListOption<T>(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
+        }
+
+        #endregion
     }
 
     public class ListOption<T, U> : ListOption
@@ -74,6 +88,15 @@ namespace CustomSpectreConsole
         {
             DisplayName = displayName;
             Function = function;
+        }
+
+        #endregion
+
+        #region Public API
+
+        public static ListOption<T, U> CancelOption()
+        {
+            return new ListOption<T, U>(GlobalConstants.SelectionOptions.Cancel, (T) => throw new Exception(GlobalConstants.Commands.CANCEL));
         }
 
         #endregion

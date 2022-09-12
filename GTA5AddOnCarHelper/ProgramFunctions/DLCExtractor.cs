@@ -207,7 +207,7 @@ namespace GTA5AddOnCarHelper
             List<ListOption<List<string>>> options = new List<ListOption<List<string>>>();
             options.Add(new ListOption<List<string>>("Extract from .zip/.rar/.7z files", ExtractFiles));
             options.Add(new ListOption<List<string>>("Extract from already unarchived folders", ExtractDirectories));
-            options.Add(new ListOption<List<string>>(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
+            options.Add(ListOption<List<string>>.CancelOption(GlobalConstants.SelectionOptions.ReturnToMenu));
 
             SelectionPrompt<ListOption<List<string>>> prompt = new SelectionPrompt<ListOption<List<string>>>();
             prompt.Title = "Select the type of extraction you want to perform:";
@@ -308,6 +308,7 @@ namespace GTA5AddOnCarHelper
                 AnsiConsole.WriteLine(insert);
             });
 
+            Console.WriteLine();
             Utilities.WriteToFile(destDir, DLCListOutputFileName, dlcList);
         }
 
