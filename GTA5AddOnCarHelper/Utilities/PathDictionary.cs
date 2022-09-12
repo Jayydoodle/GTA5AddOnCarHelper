@@ -201,7 +201,7 @@ namespace GTA5AddOnCarHelper
                     return "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
 
                 case Node.OpenIVPath:
-                    return "Enter the path to your [green]Open IV[/] application (press [blue]<enter>[/] to skip: ";
+                    return "Enter the path to your [green]Open IV[/] application (press [blue]<enter>[/] to skip): ";
 
                 case Node.VehicleDownloadsPath:
                     return "\nEnter the path to the directory containing all of your vehicle downloads: ";

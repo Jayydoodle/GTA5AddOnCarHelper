@@ -113,6 +113,7 @@ namespace GTA5AddOnCarHelper
 
                 Console.WriteLine();
                 Utilities.WriteToFile(WorkingDirectory, MakeDictionaryFileName, new StringBuilder(resultText));
+                Console.WriteLine();
 
                 makes = Utilities.ReadTextFromFile(WorkingDirectory, MakeDictionaryFileName);
             }
