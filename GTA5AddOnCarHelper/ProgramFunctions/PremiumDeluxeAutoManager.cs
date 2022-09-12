@@ -670,7 +670,7 @@ namespace GTA5AddOnCarHelper
         private const string ShowAllVehiclesSummary = "Displays a grid containing all of the currently loaded vehicles";
 
         private const string EditVehicleSummary = "Edit a single vehicle from the list of currently loaded vehicles.  You will be prompted for " +
-        "the model name of the vehicle, which you should be able to copy from the grid after using the 'Show All Vehicles' option.  You then" +
+        "the model name of the vehicle, which you should be able to copy from the grid after using the 'Show All Vehicles' option.  You then " +
         "will be asked to edit the vehicle's properties one by one.  To skip editing a field, leave the input blank and press [blue]<enter>[/].";
 
         private const string GetBulkEditOptionsSummary = "Shows additional options for editing more than one vehicle at a time";
@@ -697,13 +697,13 @@ namespace GTA5AddOnCarHelper
 
         private const string AutoAssignClassNamesSummary = "Pulls class name data from the associated vehicles.meta file and automatically assigns it to each add-on vehicle";
 
-        private const string SaveChangesSummary = "Takes all of the vehicle edits you've made and generates [aqua].ini[/] files that will be saved to your " +
-        "PremiumDeluxeAutoManager folder.  A separate .ini file will be generated for each unique 'class' you've assigned to each of your vehicles, which will " +
-        "represent how your vehicles are grouped together once inside the Premium Deluxe dealership.  These .ini files will need to be added to your " +
-        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Vehicles[/] folder, and a reference to the name of the .ini file will need to be added to " +
-        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the [orange1].cfg[/] language file of your choice.  Every time 'SaveChanges' " +
-        "is selected, any existing .ini files in the PremiumDeluxeManager folder will be archived so that changes can easily be reversed.  [red bold]Don't forget " +
-        "to save changes before exiting the Premium Deluxe Auto Manager menu![/]";
+        private const string SaveChangesSummary = "Takes all of the vehicle edits you've made and generates [violet].ini[/] files that will be saved to your " +
+        "PremiumDeluxeAutoManager folder.  A separate [violet].ini[/] file will be generated for each unique 'class' you've assigned to each of your vehicles, which will " +
+        "represent how your vehicles are grouped together once inside the Premium Deluxe dealership.  These [violet].ini[/] files will need to be added to your " +
+        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Vehicles[/] folder, and a reference to the name of the [violet].ini[/] file will need to be added to " +
+        "[orange1]Grand Theft Auto V/scripts/PremiumDeluxeMotorsport/Languages[/] in the [green].cfg[/] language file of your choice.  This action can be performed manually or " +
+        "automatically.  Every time 'SaveChanges' is selected, any existing [violet].ini[/] files in the PremiumDeluxeManager folder will be archived so that changes can easily be reversed.  " +
+        "[red bold]Don't forget to save changes before exiting the Premium Deluxe Auto Manager menu![/]";
 
         private const string ImportFromGTA5DirectorySummary = "Finds the .ini files in the [teal]Grand Theft Auto V\\scripts\\PremiumDeluxeMotorsport\\Vehicles[/] folder " +
         "and imports the vehicles inside each file into the manager for editing";
