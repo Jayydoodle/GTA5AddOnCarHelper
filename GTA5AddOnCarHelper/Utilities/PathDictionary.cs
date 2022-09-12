@@ -1,4 +1,5 @@
 ﻿using CustomSpectreConsole;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,42 +17,55 @@ namespace GTA5AddOnCarHelper
 
         public const string FileName = "settings.xml";
 
-        private const string DefaultNotRequiredPrompt = "Enter the directory (if nothing is entered, the current directory will be used): ";
-        private const string WorkingDirectoryPrompt = "Enter in the working directory that this program will use to output generated files (if nothing is entered, the current directory will be used): ";
-
         #endregion
 
         #region Public API
 
-        public static DirectoryInfo GetDirectory(Node node, string prompt = null, bool isRequired = true)
+        public static T GetDirectoryOrFile<T>(Node node, string prompt = null, bool isRequired = true)
+        where T : FileSystemInfo
         {
-            DirectoryInfo dir = null;
+            T info = null;
             string path = GetValue(node);
 
             if (!string.IsNullOrEmpty(path))
-                dir = new DirectoryInfo(path);
+                info  = (T)Activator.CreateInstance(typeof(T), new object[] { path });
 
-            if (dir == null || !dir.Exists)
+            if (info == null || !info.Exists)
             {
                 if (string.IsNullOrEmpty(prompt))
-                    prompt = isRequired ? GetDefaultPromptByNode(node) : DefaultNotRequiredPrompt;
+                    prompt = GetDefaultPromptByNode(node, isRequired);
 
-                if (node == Node.WorkingDirectoryPath)
-                {
-                    isRequired = false;
-                    prompt = WorkingDirectoryPrompt;
-                }
+                info = Utilities.GetFileSystemInfoFromInput<T>(prompt, isRequired);
 
-                dir = Utilities.GetDirectoryFromInput(prompt, isRequired);
+                if (info != null && info.Exists)
+                    Update(node, info.FullName);
+            }
 
-                if(dir == null && node == Node.WorkingDirectoryPath)
-                    dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            return info;
+        }
 
-                if (dir != null && dir.Exists)
-                    Update(node, dir.FullName);
+        public static DirectoryInfo GetDirectory(Node node, string prompt = null, bool isRequired = true)
+        {
+            DirectoryInfo dir = null;
+
+            if (node == Node.WorkingDirectoryPath)
+                isRequired = false;
+
+            dir = GetDirectoryOrFile<DirectoryInfo>(node, prompt, isRequired);
+
+            if (dir == null && node == Node.WorkingDirectoryPath)
+            {
+                dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+                Update(node, dir.FullName);
             }
 
             return dir;
+        }
+
+        public static FileInfo GetFile(Node node, string prompt = null, bool isRequired = true)
+        {
+            FileInfo file = GetDirectoryOrFile<FileInfo>(node, prompt, isRequired);
+            return file;
         }
 
         public static DirectoryInfo GetDirectoryFromNode(Node node, string expectedPath)
@@ -75,14 +89,23 @@ namespace GTA5AddOnCarHelper
         public static string GetSetting(Node node, string prompt = null)
         {
             string value = GetValue(node);
+            bool exists = !string.IsNullOrEmpty(value) && (Directory.Exists(value) || File.Exists(value));
 
-            if (!string.IsNullOrEmpty(value))
+            if (exists)
                 return value;
 
             if (string.IsNullOrEmpty(prompt))
                 prompt = string.Format("Enter in a value for the {0}: ", node.ToString().SplitByCase());
 
-            value = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
+            while (!exists)
+            {
+                value = Utilities.GetInput(prompt, x => !string.IsNullOrEmpty(x));
+                exists = Directory.Exists(value) || File.Exists(value);
+
+                if (!exists)
+                    AnsiConsole.MarkupLine("The directory or file specified by the path [red]{0}[/] does not exist", value);
+            }
+
             Update(node, value);
 
             return value;
@@ -167,7 +190,7 @@ namespace GTA5AddOnCarHelper
             return xml;
         }
 
-        private static string GetDefaultPromptByNode(Node node)
+        private static string GetDefaultPromptByNode(Node node, bool isRequired = true)
         {
             switch(node)
             {
@@ -177,14 +200,20 @@ namespace GTA5AddOnCarHelper
                 case Node.LanguageFilesPath:
                     return "Enter the directory that contains the [green]" + Constants.Extentions.Gxt2 + "[/] files: ";
 
+                case Node.OpenIVPath:
+                    return "Enter the path to your [green]Open IV[/] application (press [blue]<enter>[/] to skip: ";
+
                 case Node.VehicleDownloadsPath:
                     return "\nEnter the path to the directory containing all of your vehicle downloads: ";
 
                 case Node.VehicleMetaFilesPath:
                     return "Enter the directory that contains the [green]" + Constants.Extentions.Meta + "[/] files: ";
 
+                case Node.WorkingDirectoryPath:
+                    return "Enter in the working directory that this program will use to output generated files (if nothing is entered, the current directory will be used): ";
+
                 default:
-                    return "Enter the directory: ";
+                    return isRequired ? "Enter the directory: " : "Enter the directory (if nothing is entered, the current directory will be used): ";
             }
         }
 
@@ -195,11 +224,12 @@ namespace GTA5AddOnCarHelper
         public enum Node
         {
             APIKey,
-            GTA5FolderPath,
             WorkingDirectoryPath,
+            GTA5FolderPath,
+            OpenIVPath,
             VehicleMetaFilesPath,
             VehicleDownloadsPath,
-            LanguageFilesPath
+            LanguageFilesPath,
         }
 
         #endregion

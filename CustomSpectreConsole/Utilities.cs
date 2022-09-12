@@ -20,7 +20,7 @@ namespace CustomSpectreConsole
     {
         #region Public API: File Management
 
-        public static void OpenDirectory(string filePath)
+        public static void StartProcess(string filePath)
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
             {
@@ -30,23 +30,27 @@ namespace CustomSpectreConsole
             });
         }
 
-        public static DirectoryInfo GetDirectoryFromInput(string prompt, bool isRequired)
+        public static T GetFileSystemInfoFromInput<T>(string prompt, bool isRequired)
+        where T : FileSystemInfo
         {
-            DirectoryInfo dir = null;
+            T info = null;
 
-            while (dir == null || !dir.Exists)
+            while (info == null || !info.Exists)
             {
                 string path = GetInput(prompt, x => !string.IsNullOrEmpty(x) || !isRequired);
 
                 if (string.IsNullOrEmpty(path) && !isRequired)
                 {
-                    dir = null;
+                    info = null;
                     break;
                 }
 
-                dir = new DirectoryInfo(path);
+                if (!string.IsNullOrEmpty(path))
+                    path = path.Replace("\"", string.Empty);
 
-                if (!dir.Exists)
+                info = (T)Activator.CreateInstance(typeof(T), new object[]{ path });
+
+                if (!info.Exists)
                 {
                     AnsiConsole.WriteLine("\nThe directory does not exist\n");
                 }
@@ -54,7 +58,7 @@ namespace CustomSpectreConsole
 
             AnsiConsole.WriteLine();
 
-            return dir;
+            return info;
         }
 
         public static void WriteToFile(DirectoryInfo dir, string outputFileName, StringBuilder content)

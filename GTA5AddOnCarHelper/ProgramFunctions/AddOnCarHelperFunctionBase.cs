@@ -72,7 +72,7 @@ namespace GTA5AddOnCarHelper
 
             if (!paths.Any())
             {
-                Utilities.OpenDirectory(Environment.CurrentDirectory);
+                Utilities.StartProcess(Environment.CurrentDirectory);
                 return;
             }
 
@@ -81,9 +81,12 @@ namespace GTA5AddOnCarHelper
             prompt.AddChoices(choices);
 
             string choice = AnsiConsole.Prompt(prompt);
-            DirectoryInfo dir = choice == WorkingDirectoryName ? WorkingDirectory : Settings.GetDirectory(Settings.GetNode(choice));
 
-            Utilities.OpenDirectory(dir.FullName);
+            string path = choice == WorkingDirectoryName 
+                        ? WorkingDirectory.FullName 
+                        : Settings.GetSetting(Settings.GetNode(choice));
+
+            Utilities.StartProcess(path);
         }
 
         private DirectoryInfo EnsureWorkingDirectory()

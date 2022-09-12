@@ -10,6 +10,7 @@ namespace GTA5AddOnCarHelper
     {
         public static class Extentions
         {
+            public const string Cfg = ".cfg";
             public const string Ini = ".ini";
             public const string Meta = ".meta";
             public const string Gxt2 = ".gxt2";

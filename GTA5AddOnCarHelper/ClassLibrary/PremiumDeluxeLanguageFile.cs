@@ -11,7 +11,6 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
-        public const string FileExtension = ".cfg";
         private const string CategoryIdentifier = "//";
 
         #endregion
@@ -21,7 +20,7 @@ namespace GTA5AddOnCarHelper
         public Dictionary<string, string> VehicleClasses { get; set; }
         public string SourceFileName { get; set; }
         public string SourceFilePath { get; set; }
-        public string DisplayName { get { return SourceFileName.Replace(FileExtension, string.Empty); } }
+        public string DisplayName { get { return SourceFileName.Replace(Constants.Extentions.Cfg, string.Empty); } }
         private string CategoryName { get; set; }
         private string OtherText { get; set; }
 
@@ -57,7 +56,7 @@ namespace GTA5AddOnCarHelper
 
         public static List<PremiumDeluxeLanguageFile> GetAll(DirectoryInfo dir)
         {
-            FileInfo[] files = dir.GetFiles("*" + FileExtension);
+            FileInfo[] files = dir.GetFiles("*" + Constants.Extentions.Cfg);
             List<PremiumDeluxeLanguageFile> langFiles = new List<PremiumDeluxeLanguageFile>();
 
             foreach (FileInfo file in files)

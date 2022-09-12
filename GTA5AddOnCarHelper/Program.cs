@@ -17,6 +17,11 @@ namespace GTA5AddOnCarHelper
             Console.SetWindowSize(Console.LargestWindowWidth / 2, Console.LargestWindowHeight / 2);
             System.Console.OutputEncoding = Encoding.UTF8;
 
+            Settings.GetDirectory(Settings.Node.GTA5FolderPath);
+            Settings.GetDirectory(Settings.Node.WorkingDirectoryPath);
+            Settings.GetFile(Settings.Node.OpenIVPath, null, false);
+            Console.Clear();
+
             SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
             prompt.Title = "Select an option:";
             List<ListOption> options = CreateListOptions();
@@ -95,7 +100,7 @@ namespace GTA5AddOnCarHelper
                     {
                         AnsiConsole.Markup(string.Format("[green]{0}[/]: {1}", x, value));
 
-                        if (!Directory.Exists(value))
+                        if (!Directory.Exists(value) && !File.Exists(value))
                             AnsiConsole.Markup(" [red bold]INVALID PATH[/]");
 
                         AnsiConsole.WriteLine();
@@ -127,11 +132,11 @@ namespace GTA5AddOnCarHelper
         private static void OpenDirectory()
         {
             Dictionary<Settings.Node, string> paths = Settings.GetValues(x => x.ToString().Contains("Path"));
-            paths = paths.Where(x => Directory.Exists(x.Value)).ToDictionary(x => x.Key, x => x.Value);
+            paths = paths.Where(x => Directory.Exists(x.Value) || File.Exists(x.Value)).ToDictionary(x => x.Key, x => x.Value);
 
             if(!paths.Any())
             {
-                Utilities.OpenDirectory(Environment.CurrentDirectory);
+                Utilities.StartProcess(Environment.CurrentDirectory);
                 return;
             }
 
@@ -140,9 +145,8 @@ namespace GTA5AddOnCarHelper
             prompt.AddChoices(paths.Keys);
 
             Settings.Node choice = AnsiConsole.Prompt(prompt);
-            DirectoryInfo dir = Settings.GetDirectory(choice);
-
-            Utilities.OpenDirectory(dir.FullName);
+            string path = Settings.GetSetting(choice);
+            Utilities.StartProcess(path);
         }
     }
 }
