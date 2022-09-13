@@ -68,7 +68,7 @@ namespace GTA5AddOnCarHelper
            
             List<string> choices = new List<string>();
             choices.Add(WorkingDirectoryName);
-            choices.AddRange(paths.Where(x => Directory.Exists(x.Value)).Select(x => x.Key.ToString()));
+            choices.AddRange(paths.Where(x => Directory.Exists(x.Value) || File.Exists(x.Value)).Select(x => x.Key.ToString()));
 
             if (!paths.Any())
             {

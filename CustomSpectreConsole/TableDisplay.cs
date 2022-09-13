@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static CustomSpectreConsole.Extensions;
 
 namespace CustomSpectreConsole
 {
@@ -41,15 +42,15 @@ namespace CustomSpectreConsole
 
                     if (i == 0)
                     {
-                        orderedItems = prop.PropertyType != typeof(int) ? orderedItems.OrderBy(x => prop.GetValue(x))
-                                                                       : orderedItems.OrderByDescending(x => prop.GetValue(x));
+                        orderedItems = prop.PropertyType != typeof(int) ? orderedItems.OrderBy(x => prop.GetValue(x), new NumericStringComparer())
+                                                                       : orderedItems.OrderByDescending(x => prop.GetValue(x), new NumericStringComparer());
 
                         message.Append(string.Format("Ordered by [blue]{0}[/] ", propName));
                     }
                     else
                     {
-                        orderedItems = prop.PropertyType != typeof(int) ? orderedItems.ThenBy(x => prop.GetValue(x))
-                                                                       : orderedItems.ThenByDescending(x => prop.GetValue(x));
+                        orderedItems = prop.PropertyType != typeof(int) ? orderedItems.ThenBy(x => prop.GetValue(x), new NumericStringComparer())
+                                                                       : orderedItems.ThenByDescending(x => prop.GetValue(x), new NumericStringComparer());
 
                         message.Append(string.Format("Then by [blue]{0}[/] ", propName));
                     }

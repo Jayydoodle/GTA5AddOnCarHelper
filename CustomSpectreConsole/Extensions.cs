@@ -29,5 +29,31 @@ namespace CustomSpectreConsole
         }
 
         #endregion
+
+
+
+        #region IComparer
+
+        public class NumericStringComparer : Comparer<object?>
+        {
+            public override int Compare(object? x, object? y)
+            {
+                if (x == null || y == null)
+                    return Object.Equals(x, y) ? 1 : 0;
+
+                bool isXNumeric = double.TryParse(x.ToString(), out double xN);
+                bool isYNumeric = double.TryParse(y.ToString(), out double yN);
+
+                if (isXNumeric && isYNumeric)
+                    return xN.CompareTo(yN);
+
+                if (x is IComparable && y is IComparable)
+                    return ((IComparable)x).CompareTo((IComparable)y);
+
+                return Object.Equals(x, y) ? 1 : 0;
+            }
+        }
+
+        #endregion
     }
 }
