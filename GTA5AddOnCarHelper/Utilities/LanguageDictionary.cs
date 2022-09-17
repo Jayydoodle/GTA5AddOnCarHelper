@@ -34,7 +34,10 @@ namespace GTA5AddOnCarHelper
                         if (split.Length != 2)
                             continue;
 
-                        values.Add(split[0].Trim(), split[1].Trim());
+                        string key = split[0].Trim();
+
+                        if (!values.ContainsKey(key))
+                            values.Add(split[0].Trim(), split[1].Trim());
                     }
                 }
 

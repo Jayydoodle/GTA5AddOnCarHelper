@@ -340,13 +340,18 @@ namespace GTA5AddOnCarHelper
             Utilities.ArchiveFiles(WorkingDirectory, "*.txt", new List<string>() { OutputFileName });
 
             StringBuilder content = new StringBuilder();
+            HashSet<string> additionalMappings = new HashSet<string>();
 
             foreach (KeyValuePair<string, LanguageMapping> pair in Mappings)
             {
-                string entry = pair.Value.Save();
+                string entry1 = pair.Value.Save();
+                string entry2 = pair.Value.SaveAdditionalMappings(additionalMappings);
 
-                if(!string.IsNullOrEmpty(entry))
-                    content.AppendLine(entry);
+                if(!string.IsNullOrEmpty(entry1))
+                    content.AppendLine(entry1);
+
+                if (!string.IsNullOrEmpty(entry2))
+                    content.AppendLine(entry2);
             };
 
             Utilities.WriteToFile(WorkingDirectory, OutputFileName, content);
@@ -417,6 +422,24 @@ namespace GTA5AddOnCarHelper
             public string Save()
             {
                 return !string.IsNullOrEmpty(DisplayName) ? string.Format("{0} = {1}", Hash, DisplayName) : null;
+            }
+
+            public string SaveAdditionalMappings(HashSet<string> mappings)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                if (!string.IsNullOrEmpty(GameName) && !string.IsNullOrEmpty(DisplayName) && !string.Equals(DisplayName, GameName, StringComparison.Ordinal))
+                {
+                    string gameNameHash = Utilities.GetHash(GameName);
+
+                    if (!(string.Equals(Hash, gameNameHash)) && !mappings.Contains(gameNameHash))
+                    {
+                        mappings.Add(gameNameHash);
+                        sb.Append(string.Format("{0} = {1}", gameNameHash, DisplayName));
+                    }
+                }
+
+                return sb.ToString();
             }
 
             #endregion
