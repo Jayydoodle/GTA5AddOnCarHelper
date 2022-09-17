@@ -15,6 +15,8 @@ namespace GTA5AddOnCarHelper
     {
         #region Constants
 
+        private const string InitDatasNode = "InitDatas";
+        private const string ItemNode = "Item";
         private const string ModelNode = "modelName";
         private const string TxdNode = "txdName";
         private const string HandlingIdNode = "handlingId";
@@ -54,32 +56,50 @@ namespace GTA5AddOnCarHelper
 
         public static VehicleMeta Create(XMLFile xml)
         {
-            XElement modelNode = TryGetNode<VehicleMeta>(xml, ModelNode);
+            XElement itemNode = xml.TryGetNode(ItemNode);
+            return itemNode != null ? Create(xml, itemNode) : null;
+        }
+
+        public static List<VehicleMeta> CreateAll(XMLFile xml)
+        {
+            List<VehicleMeta> metaFiles = new List<VehicleMeta>();
+            XElement baseNode = xml.TryGetNode(InitDatasNode);
+
+            List<XElement> itemNodes = baseNode.Document.Descendants(ItemNode)
+                                       .Where(x => x.Parent == baseNode).ToList();
+
+            itemNodes.ForEach(x => metaFiles.Add(Create(xml, x)));
+            return metaFiles;
+        }
+
+        private static VehicleMeta Create(XMLFile xml, XElement node)
+        {
+            XElement modelNode = node.Descendants(ModelNode).FirstOrDefault();
 
             if (modelNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(ModelNode, xml);
 
-            XElement txdNode = TryGetNode<VehicleMeta>(xml, TxdNode);
+            XElement txdNode = node.Descendants(TxdNode).FirstOrDefault();
 
             if (txdNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(TxdNode, xml);
 
-            XElement handlindIdNode = TryGetNode<VehicleMeta>(xml, HandlingIdNode);
+            XElement handlindIdNode = node.Descendants(HandlingIdNode).FirstOrDefault();
 
             if (handlindIdNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(HandlingIdNode, xml);
 
-            XElement gameNameNode = TryGetNode<VehicleMeta>(xml, GameNameNode);
+            XElement gameNameNode = node.Descendants(GameNameNode).FirstOrDefault();
 
             if (gameNameNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(GameNameNode, xml);
 
-            XElement vehicleMakeNameNode = TryGetNode<VehicleMeta>(xml, VehicleMakeNameNode);
+            XElement vehicleMakeNameNode = node.Descendants(VehicleMakeNameNode).FirstOrDefault();
 
             if (vehicleMakeNameNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(VehicleMakeNameNode, xml);
 
-            XElement vehicleClassNameNode = TryGetNode<VehicleMeta>(xml, VehicleClassNameNode);
+            XElement vehicleClassNameNode = node.Descendants(VehicleClassNameNode).FirstOrDefault();
 
             if (vehicleClassNameNode == null)
                 return GenerateMissingAttributeError<VehicleMeta>(VehicleClassNameNode, xml);
@@ -88,7 +108,7 @@ namespace GTA5AddOnCarHelper
             {
                 Model = modelNode.Value,
                 TxDName = txdNode.Value,
-                HandlingId = handlindIdNode.Value,  
+                HandlingId = handlindIdNode.Value,
                 GameName = gameNameNode.Value,
                 Make = vehicleMakeNameNode.Value,
                 Class = vehicleClassNameNode.Value,

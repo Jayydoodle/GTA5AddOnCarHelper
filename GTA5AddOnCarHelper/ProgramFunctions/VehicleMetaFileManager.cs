@@ -146,11 +146,14 @@ namespace GTA5AddOnCarHelper
             foreach(FileInfo x in files)
             {
                 XMLFile file = XMLFile.Load(x.FullName);
-                T meta = default(T);
+                List<T> newMetaFiles = default(List<T>);
 
                 if (file != null)
                 {
-                    meta = T.Create(file);
+                    if (typeof(T) == typeof(VehicleMeta))
+                        newMetaFiles = VehicleMeta.CreateAll(file) as List<T>;
+                    else
+                        newMetaFiles = new List<T>() { T.Create(file) };
                 }
                 else
                 {
@@ -158,20 +161,23 @@ namespace GTA5AddOnCarHelper
                     continue;
                 }
 
-                if(!meta.IsValid)
+                newMetaFiles.ForEach(meta =>
                 {
-                    GenerateError(meta.ErrorMessage, meta.XML.SourceFileName);
-                }
-                else if (metaFiles.ContainsKey(meta.Model.ToLower()))
-                {
-                    GenerateError(string.Format("The file [red]{0}[/] could not be processed.  A file with a duplicate identifier " +
-                        "[orange1]{1}[/] has already been added to the list.\n", x.FullName, meta.Model.ToLower()), x.FullName);
-                }
-                else
-                {
-                    meta.SourceFilePath = x.FullName;
-                    metaFiles.Add(meta.Model.ToLower(), meta);
-                }
+                    if (!meta.IsValid)
+                    {
+                        GenerateError(meta.ErrorMessage, meta.XML.SourceFileName);
+                    }
+                    else if (metaFiles.ContainsKey(meta.Model.ToLower()))
+                    {
+                        GenerateError(string.Format("The file [red]{0}[/] could not be processed.  A file with a duplicate identifier " +
+                            "[orange1]{1}[/] has already been added to the list.\n", x.FullName, meta.Model.ToLower()), x.FullName);
+                    }
+                    else
+                    {
+                        meta.SourceFilePath = x.FullName;
+                        metaFiles.Add(meta.Model.ToLower(), meta);
+                    }
+                });
             };
 
             if (!metaFiles.Any())

@@ -30,6 +30,12 @@ namespace CustomSpectreConsole
                                      : Document?.Descendants(node).FirstOrDefault();
         }
 
+        public List<XElement> TryGetNodes(string node, Func<XElement, bool> predicate = null)
+        {
+            return predicate != null ? Document?.Descendants(node).Where(predicate).ToList()
+                                     : Document?.Descendants(node).ToList();
+        }
+
         public void Save(string path)
         {
             Document.Save(path);
