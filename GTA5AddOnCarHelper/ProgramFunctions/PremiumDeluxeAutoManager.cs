@@ -644,7 +644,7 @@ namespace GTA5AddOnCarHelper
             foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
                 StringBuilder content = new StringBuilder();
-                pair.Value.ForEach(car => content.AppendLine(car.Save()));
+                pair.Value.OrderByDescending(car => car.Name).ToList().ForEach(car => content.AppendLine(car.Save()));
                 Utilities.WriteToFile(WorkingDirectory, string.Format("{0}{1}", pair.Key, Constants.Extentions.Ini), content);
             };
 
