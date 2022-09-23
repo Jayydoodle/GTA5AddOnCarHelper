@@ -709,7 +709,7 @@ namespace GTA5AddOnCarHelper
                 prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.PartialTextMatchOption());
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
-                                           .OrderBy(x => x).Distinct().ToList();
+                                           .OrderBy(x => x).Distinct().Select(x => Markup.Escape(x)).ToList();
                 if (classes.Any())
                 {
                     EditOptionChoice<PremiumDeluxeCar> filterClasses = new EditOptionChoice<PremiumDeluxeCar>("Filter By Class", nameof(PremiumDeluxeCar.Class));
@@ -719,7 +719,7 @@ namespace GTA5AddOnCarHelper
                 }
 
                 List<string> makes = cars.Where(x => !string.IsNullOrEmpty(x.Make)).Select(x => x.Make)
-                                         .OrderBy(x => x).Distinct().ToList();
+                                         .OrderBy(x => x).Distinct().Select(x => Markup.Escape(x)).ToList();
                 if (makes.Any())
                 {
                     EditOptionChoice<PremiumDeluxeCar> filterMakes = new EditOptionChoice<PremiumDeluxeCar>("Filter By Make", nameof(PremiumDeluxeCar.Make));

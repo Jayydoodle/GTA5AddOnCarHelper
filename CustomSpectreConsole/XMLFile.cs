@@ -1,8 +1,11 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CustomSpectreConsole
@@ -49,8 +52,30 @@ namespace CustomSpectreConsole
         {
             XDocument doc = null;
 
-            try { doc = XDocument.Load(fileName); }
-            catch (Exception) { return null; }
+            try 
+            {
+                string xmlText = File.ReadAllText(fileName);
+                xmlText = xmlText.Replace("&", "&amp;");
+
+                TextReader reader = new StringReader(xmlText);
+
+                XmlReaderSettings xmlReaderSettings = new XmlReaderSettings { 
+                    CheckCharacters = false, 
+                    IgnoreComments = true,
+                    ConformanceLevel = ConformanceLevel.Fragment
+                };
+
+                using (XmlReader xmlReader = XmlReader.Create(reader, xmlReaderSettings))
+                {
+                    // Load our XmlDocument
+                    xmlReader.MoveToContent();
+                    doc = XDocument.Load(xmlReader);
+                }
+            }
+            catch (Exception e) 
+            { 
+                return null; 
+            }
 
             XMLFile file = new XMLFile();
             file.Document = doc;
