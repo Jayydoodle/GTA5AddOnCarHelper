@@ -334,12 +334,12 @@ namespace CustomSpectreConsole
             return enteredValues;
         }
 
-        public static string GetInput(string message, Func<string, bool> validator = null)
+        public static string GetInput(string message, Func<string, bool> validator = null, string validationErrorMessage = null)
         {
             string value = null;
 
             TextPrompt<string> prompt = new TextPrompt<string>(message);
-            prompt.ValidationErrorMessage = "\nInvalid Input.\n";
+            prompt.ValidationErrorMessage = validationErrorMessage ?? "\nInvalid Input.\n";
             prompt.AllowEmpty = true;
 
             value = validator != null ? AnsiConsole.Prompt(prompt.Validate(validator))

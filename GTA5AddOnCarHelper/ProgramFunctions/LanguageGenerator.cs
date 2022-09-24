@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 using static GTA5AddOnCarHelper.LanguageDictionary;
 using static GTA5AddOnCarHelper.PremiumDeluxeAutoManager;
 
@@ -55,6 +56,7 @@ namespace GTA5AddOnCarHelper
             listOptions.Add(new ListOption("Edit Mappings By Filter", EditMappingsByFilter));
             listOptions.Add(new ListOption("Auto Assign Model Display Names", AutoAssignModelDisplayNames));
             listOptions.Add(new ListOption("Auto Assign Make Display Names", AutoAssignMakeDisplayNames));
+            listOptions.Add(new ListOption("Auto Format Model Year", AutoFormatModelYear));
             listOptions.Add(new ListOption("Save Changes", SaveChanges));
             listOptions.AddRange(base.GetListOptions());
             listOptions.Add(GetHelpOption());
@@ -334,6 +336,67 @@ namespace GTA5AddOnCarHelper
             AnsiConsole.MarkupLine("A total of [pink1]{0}[/] makes have had their display names updated successfully!", successCount);
         }
 
+        [Documentation(AutoFormatModelYearSummary)]
+        private void AutoFormatModelYear()
+        {
+            string optionBefore = "Date before vehicle name: Ex. YEAR VEHICLE_NAME";
+            string optionAfter = "Date after vehicle name: Ex. VEHICLE_NAME YEAR";
+
+            SelectionPrompt<string> prompt = new SelectionPrompt<string>();
+            prompt.Title = "Enter the format that you want years to appear in vehicle model names: ";
+            prompt.AddChoices(optionBefore, optionAfter, GlobalConstants.SelectionOptions.Cancel);
+
+            string choice = AnsiConsole.Prompt(prompt);
+
+            if (choice == GlobalConstants.SelectionOptions.Cancel)
+                throw new Exception(GlobalConstants.Commands.CANCEL);
+
+            string message = "Enter the format that you want the year in your vehicle names to have.  The text [orange1]'yy'[/] or [orange1]'yyyy'[/] " +
+            "must be entered to represent the general format that a vehicle will have.  But other than that, you can apply any additional " +
+            "formatting you want.  Ex. If you have a model that currently has the name Huracan 2022, you will get the following outcomes for the " +
+            "example date patterns:\n [teal]yyyy[/] = Huracan 2022\n [teal](yyyy)[/] = Huracan (2022)\n [teal]'yy[/] = Huracan '22\n\nFormat: ";
+
+            Func<string, bool> validator = x => !string.IsNullOrEmpty(x) && 
+            (x.Contains("yy") && (x.Count(y => y == 'y') == 2) || 
+            (x.Contains("yyyy") && x.Count(y => y == 'y') == 4));
+
+            string errorMessage = "\nInvalid input.  Text must contain [red]'yy'[/] or [red]'yyyy'[/]\n";
+            string format = Utilities.GetInput(message, validator, errorMessage);
+
+            List<LanguageMapping> mappings = Mappings.Values.Where(x => x.MappingType == nameof(VehicleMeta.Model))
+                                                            .Where(x => x.ModelYear.HasValue)
+                                                            .ToList();
+
+            bool addingBefore = choice == optionBefore;
+            bool isShortYear = format.Contains("yy") && (format.Count(y => y == 'y') == 2);
+            format = isShortYear ? format.Replace("yy", "{0}") : format.Replace("yyyy", "{0}");
+            int successCount = 0;
+
+            mappings.ForEach(x => 
+            {
+                StringBuilder sb = new StringBuilder();
+                int index = 0;
+
+                foreach (string piece in x.DisplayName.Split(" "))
+                {
+                    if (index != x.ModelYearIndex)
+                        sb.Append(string.Format(" {0}", piece));
+
+                    index++;
+                }
+
+                string date = isShortYear ? string.Format(format, x.ModelYear.Value.ToString("yy"))
+                                          : string.Format(format, x.ModelYear.Value.ToString("yyyy"));
+
+                x.DisplayName = addingBefore ? String.Format("{0}{1}", date, sb.ToString()).Trim()
+                                             : String.Format("{0} {1}", sb.ToString(), date).Trim();
+
+                successCount++;
+            });
+
+            AnsiConsole.MarkupLine("\nA total of [pink1]{0}[/] models have had their display names updated successfully!", successCount);
+        }
+
         [Documentation(SaveChangesSummary)]
         private void SaveChanges()
         {
@@ -415,6 +478,12 @@ namespace GTA5AddOnCarHelper
             [Protected]
             public string SourceMetaFile { get; set; }
 
+            [Protected]
+            public DateTime? ModelYear => GetModelYear();
+
+            [Protected]
+            public int ModelYearIndex { get; set; } = -1;
+
             #endregion
 
             #region Public API
@@ -440,6 +509,102 @@ namespace GTA5AddOnCarHelper
                 }
 
                 return sb.ToString();
+            }
+
+            public DateTime? GetModelYear()
+            {
+                if (string.IsNullOrEmpty(DisplayName))
+                    return null;
+
+                DateTime result = DateTime.Now;
+                bool hasDate = false;
+                int currentYear = DateTime.Now.Year;
+
+                int i = 0;
+
+                foreach (string piece in DisplayName.Split(" "))
+                {
+                    hasDate = DateTime.TryParse(piece, out result);
+
+                    if (hasDate)
+                    {
+                        ModelYearIndex = i;
+                        break;
+                    }
+
+                    MatchCollection matches = Regex.Matches(piece, @"(?![A-Za-z])\b(([0-9])([0-9])([0-9])([0-9])|([0-9])([0-9]))\b(?![A-Za-z])");
+                    
+                    foreach(Match match in matches)
+                    {
+                        bool couldParse = int.TryParse(match.Value, out int value);
+
+                        if (couldParse && value > 1900 && value <= currentYear)
+                        {
+                            ModelYearIndex = i;
+                            result = new DateTime(value, 1, 1);
+                            hasDate = true;
+                            break;
+                        }
+                        else if (couldParse && value < 100)
+                        {
+                            if (2000 + value <= currentYear)
+                                value = 2000 + value;
+                            else
+                                value = 1900 + value;
+
+                            ModelYearIndex = i;
+                            result = new DateTime(value, 1, 1);
+                            hasDate = true;
+                            break;
+                        }
+                        else
+                        {
+                            string parsedMatch = match.Value.Replace("0", string.Empty);
+                            couldParse = int.TryParse(parsedMatch, out value);
+
+                            if (couldParse && value < 100)
+                            {
+                                if (2000 + value <= currentYear)
+                                    value = 2000 + value;
+                                else
+                                    value = 1900 + value;
+
+                                ModelYearIndex = i;
+                                result = new DateTime(value, 1, 1);
+                                hasDate = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (hasDate)
+                        break;
+
+                    i++;
+                }
+
+                return hasDate ? result : null;
+            }
+
+            public void ReplaceYear(string formatString, bool isShortYear)
+            {
+                StringBuilder sb = new StringBuilder();
+                int index = 0;
+                foreach (string piece in DisplayName.Split(" "))
+                {
+                    if (index == ModelYearIndex)
+                    {
+                        string date = isShortYear ? ModelYear.Value.ToString("yy")
+                                                  : ModelYear.Value.ToString("yyyy");
+
+                        sb.Append(string.Format(formatString, date));
+                    }
+                    else { sb.Append(piece); }
+
+                    index++;
+                }
+
+                DisplayName = sb.ToString();
             }
 
             #endregion
@@ -531,6 +696,9 @@ namespace GTA5AddOnCarHelper
         private const string AutoAssignMakeNamesSummary = "Attempts to automatically assign display names to makes by doing a partial text match on the make's identifier or current display name " +
         "against the list of vehicle makes defined in the file [violet]VehicleMakes.txt[/].  If this file does not exist or has been deleted, it can be regenerated via a web search against " +
         "the default web page, or via a user-defined web scrape";
+
+        private const string AutoFormatModelYearSummary = "Attempts to automatically format the year inside the display name of a model to show either before or after the model name, and formatted " +
+        "with other characters based on a user-defined format string.  Ex. 2022 Huracan can be formatted to Huracan (2022) or Huracan '22";
 
         private const string SaveChangesSummary = "Takes all of the mapping edits you've made and generates a file named " + OutputFileName + " that will be saved to the LanguageGenerator folder. " +
         "The inserts in this file can be copied to the [orange1]mods/update/update.rpf/x64/patch/data/lang[/] folder into the [orange1].cfg[/] file for your language to fix the display names " +
