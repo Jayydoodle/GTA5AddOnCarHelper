@@ -7,10 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EPPlus" Version="6.2.8" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.61.0.3148" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.45" />
     <PackageReference Include="ScrapySharp" Version="3.0.0" />
     <PackageReference Include="SharpCompress" Version="0.32.2" />
     <PackageReference Include="Spectre.Console" Version="0.44.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
   </ItemGroup>
 
 </Project>

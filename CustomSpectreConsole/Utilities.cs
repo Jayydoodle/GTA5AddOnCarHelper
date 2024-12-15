@@ -5,6 +5,7 @@ using SharpCompress.Common;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -28,6 +29,15 @@ namespace CustomSpectreConsole
                 UseShellExecute = true,
                 Verb = "open"
             });
+        }
+
+        public static DirectoryInfo GetOrCreateDirectory(string filePath)
+        {
+            // If directory does not exist, create it
+            if (!Directory.Exists(filePath))
+                return Directory.CreateDirectory(filePath);
+            else
+                return new DirectoryInfo(filePath);
         }
 
         public static T GetFileSystemInfoFromInput<T>(string prompt, bool isRequired)
@@ -334,15 +344,30 @@ namespace CustomSpectreConsole
             return enteredValues;
         }
 
-        public static string GetInput(string message, Func<string, bool> validator = null, string validationErrorMessage = null)
+        public static string GetInput(string message, Func<string, bool> validator = null, string errorMessage = null)
+        {
+            PromptSettings settings = new PromptSettings();
+            settings.Prompt = message;
+            settings.Validator = validator;
+            settings.ValidationErrorMessage = errorMessage;
+            return GetInput(settings);
+        }
+
+        public static string GetInput(PromptSettings settings)
         {
             string value = null;
 
-            TextPrompt<string> prompt = new TextPrompt<string>(message);
-            prompt.ValidationErrorMessage = validationErrorMessage ?? "\nInvalid Input.\n";
+            if(settings == null)
+                settings = new PromptSettings();
+
+            TextPrompt<string> prompt = new TextPrompt<string>(settings.Prompt);
+            prompt.ValidationErrorMessage = settings.ValidationErrorMessage ?? "\nInvalid Input.\n";
             prompt.AllowEmpty = true;
 
-            value = validator != null ? AnsiConsole.Prompt(prompt.Validate(validator))
+            if(settings.IsSecret)
+                prompt.Secret();
+
+            value = settings.Validator != null ? AnsiConsole.Prompt(prompt.Validate(settings.Validator))
                                       : AnsiConsole.Prompt(prompt);
 
             string command = value.ToUpper();

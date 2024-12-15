@@ -2,6 +2,7 @@
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -22,7 +23,10 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public abstract void Run();
+        public virtual async void Run()
+        {
+            await Task.CompletedTask;
+        }
 
         public void WriteHeaderToConsole()
         {
@@ -47,6 +51,7 @@ namespace CustomSpectreConsole
         {
             SelectionPrompt<MenuOption> prompt = new SelectionPrompt<MenuOption>();
             prompt.Title = "Select an option:";
+            prompt.PageSize = 15;
             List<MenuOption> options = GetMenuOptions();
 
             if (options.Any(x => x.Function != null && x.Function.Method.HasAttribute<DocumentationAttribute>()))
@@ -71,10 +76,12 @@ namespace CustomSpectreConsole
                     }
                     catch (Exception e)
                     {
-                        if (e.Message != GlobalConstants.Commands.CANCEL)
-                            throw;
-                        else
+                        if (e.Message == GlobalConstants.Commands.CANCEL)
                             WriteHeaderToConsole();
+                        else if (e.Message == GlobalConstants.Commands.MENU)
+                            break;
+                        else
+                            e.LogException();
                     }
                 }
                 else
@@ -87,7 +94,7 @@ namespace CustomSpectreConsole
         }
 
         protected abstract List<MenuOption> GetMenuOptions();
-        
+
         public static MenuOption GetHelpOption()
         {
             return new MenuOption<List<MenuOption>, bool>(GlobalConstants.SelectionOptions.Help, PrintHelpText);

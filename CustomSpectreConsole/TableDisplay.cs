@@ -1,5 +1,6 @@
 ﻿using Spectre.Console;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,6 +12,19 @@ namespace CustomSpectreConsole
 {
     public class TableDisplay
     {
+        public static void BuildDisplay(IEnumerable items)
+        {
+            Type enumerableType = items.GetType().GenericTypeArguments[0];
+            Type filterType = typeof(ListFilter<>).MakeGenericType(enumerableType);
+            
+            object listFilter = Activator.CreateInstance(filterType, new object[] { items, true });
+
+            MethodInfo displayMethod = typeof(TableDisplay).GetMethods().First(x => x.IsGenericMethod && x.Name == nameof(BuildDisplay));
+            MethodInfo displayMethodConstructed = displayMethod.MakeGenericMethod(enumerableType);
+
+            displayMethodConstructed.Invoke(null, new object[] { listFilter });
+        }
+
         public static void BuildDisplay<T>(ListFilter<T> filter)
         {
             Table table = new Table();
