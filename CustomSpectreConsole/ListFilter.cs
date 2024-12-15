@@ -52,7 +52,7 @@ namespace CustomSpectreConsole
             CustomFilters = new List<Func<T, bool>>();
             TextMatchInput = new Dictionary<string, string>();
 
-            if(prompt)
+            if (prompt)
                 Prompt(list);
         }
 
@@ -72,15 +72,15 @@ namespace CustomSpectreConsole
             if (currentChoices == null || !currentChoices.Any())
                 return;
 
-            foreach(EditOptionChoice<T> choice in currentChoices)
+            foreach (EditOptionChoice<T> choice in currentChoices)
             {
-                if(choice.Value == nameof(OrderBys))
+                if (choice.Value == nameof(OrderBys))
                 {
                     OrderBys = GetOrderBys();
                     continue;
                 }
 
-                if(choice.Value == TextMatch)
+                if (choice.Value == TextMatch)
                 {
                     GetPartialTextMatchFilter();
                     continue;
@@ -118,9 +118,19 @@ namespace CustomSpectreConsole
 
         #region Protected API
 
+        protected EditOptionChoice<T> OrderByOption()
+        {
+            return new EditOptionChoice<T>("Use Custom Ordering", nameof(ListFilter.OrderBys));
+        }
+
+        protected EditOptionChoice<T> PartialTextMatchOption()
+        {
+            return new EditOptionChoice<T>("Use Partial Text Match", ListFilter.TextMatch);
+        }
+
         protected void AddFilter(string propertyName, EditOptionChoice<T> choice)
         {
-            if(choice.Action != null)
+            if (choice.Action != null)
             {
                 AddCustomFilter(choice.Action);
                 return;
@@ -132,7 +142,7 @@ namespace CustomSpectreConsole
             Filters[propertyName].Add(choice.Value);
         }
 
-        protected virtual void Prompt(IEnumerable<T> list) 
+        protected virtual void Prompt(IEnumerable<T> list)
         {
             if (list == null)
                 return;
@@ -143,7 +153,8 @@ namespace CustomSpectreConsole
             prompt.Required = false;
             prompt.PageSize = 20;
 
-            prompt.AddChoice(EditOptionChoice<T>.OrderByOption());
+            prompt.AddChoice(OrderByOption());
+            prompt.AddChoice(PartialTextMatchOption());
 
             List<EditOptionChoice<T>> choices = AnsiConsole.Prompt(prompt);
             AddFilters(choices);

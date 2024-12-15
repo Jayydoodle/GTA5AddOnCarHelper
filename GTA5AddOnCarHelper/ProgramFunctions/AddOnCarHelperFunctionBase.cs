@@ -48,13 +48,12 @@ namespace GTA5AddOnCarHelper
             WorkingDirectory = EnsureWorkingDirectory();
         }
 
-        protected override List<ListOption> GetListOptions()
+        protected override List<MenuOption> GetMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Open Directory", OpenDirectory));
-            listOptions.AddRange(base.GetListOptions());
+            List<MenuOption> menuOptions = new List<MenuOption>();
+            menuOptions.Add(new MenuOption("Open Directory", OpenDirectory));
 
-            return listOptions;
+            return menuOptions;
         }
 
         #endregion

@@ -15,15 +15,15 @@ namespace CustomSpectreConsole
         #region Properties
 
         private bool AllowProtectedEdit { get; set; }
-        private Dictionary<string, bool> MemberValues { get; set; }
+        private Dictionary<string, bool> MemberEditabilityLookup { get; set; }
 
         #endregion
 
         #region Constructor
 
-        public EditOptions(bool defaultValue = true, bool allowProtectedEdit = false)
+        public EditOptions(bool canEdit = true, bool allowProtectedEdit = false)
         {
-            MemberValues = new Dictionary<string, bool>();
+            MemberEditabilityLookup = new Dictionary<string, bool>();
             AllowProtectedEdit = allowProtectedEdit;
 
             IEnumerable<PropertyInfo> props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -31,7 +31,7 @@ namespace CustomSpectreConsole
             if (!allowProtectedEdit)
                 props = props.Where(x => !x.HasAttribute<ProtectedAttribute>());
 
-            props.Select(x => x.Name).ToList().ForEach(x => MemberValues.Add(x, defaultValue));
+            props.Select(x => x.Name).ToList().ForEach(x => MemberEditabilityLookup.Add(x, canEdit));
         }
 
         #endregion
@@ -40,18 +40,18 @@ namespace CustomSpectreConsole
 
         public void Select(string member)
         {
-            if (MemberValues.ContainsKey(member))
-                MemberValues[member] = true;
+            if (MemberEditabilityLookup.ContainsKey(member))
+                MemberEditabilityLookup[member] = true;
         }
 
         public List<PropertyInfo> GetEditableProperties()
         {
-            return GetProperties().Where(x => MemberValues[x.Name]).ToList();
+            return GetProperties().Where(x => MemberEditabilityLookup[x.Name]).ToList();
         }
 
         public bool GetValue(string member)
         {
-            MemberValues.TryGetValue(member, out bool value);
+            MemberEditabilityLookup.TryGetValue(member, out bool value);
             return value;
         }
 
@@ -82,23 +82,13 @@ namespace CustomSpectreConsole
 
         private List<PropertyInfo> GetProperties()
         {
-            return typeof(T).GetProperties().Where(x => MemberValues.Keys.Contains(x.Name)).ToList();
+            return typeof(T).GetProperties().Where(x => MemberEditabilityLookup.Keys.Contains(x.Name)).ToList();
         }
 
         #endregion
     }
 
-    public abstract class EditOptionChoice
-    {
-        #region Constants
-
-        public const string ConfigureOrdering = "Use Custom Ordering";
-        public const string PartialTextMatch = "Use Partial Text Match";
-
-        #endregion
-    }
-
-    public class EditOptionChoice<T> : EditOptionChoice, IMultiSelectionItem<EditOptionChoiceDetails<T>>
+    public class EditOptionChoice<T> : IMultiSelectionItem<EditOptionChoiceDetails<T>>
     {
         #region Properties
 
@@ -177,20 +167,6 @@ namespace CustomSpectreConsole
         public override string ToString()
         {
             return Details.DisplayName;
-        }
-
-        #endregion
-
-        #region Static API
-
-        public static EditOptionChoice<T> OrderByOption()
-        {
-            return new EditOptionChoice<T>(ConfigureOrdering, nameof(ListFilter.OrderBys));
-        }
-
-        public static EditOptionChoice<T> PartialTextMatchOption()
-        {
-            return new EditOptionChoice<T>(PartialTextMatch, ListFilter.TextMatch);
         }
 
         #endregion

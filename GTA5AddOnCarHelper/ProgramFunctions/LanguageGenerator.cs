@@ -47,21 +47,20 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
-        protected override List<ListOption> GetListOptions()
+        protected override List<MenuOption> GetMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
+            List<MenuOption> menuOptions = new List<MenuOption>();
 
-            listOptions.Add(new ListOption("Show Mappings", ShowMappings));
-            listOptions.Add(new ListOption("Edit Mapping", EditMapping));
-            listOptions.Add(new ListOption("Edit Mappings By Filter", EditMappingsByFilter));
-            listOptions.Add(new ListOption("Auto Assign Model Display Names", AutoAssignModelDisplayNames));
-            listOptions.Add(new ListOption("Auto Assign Make Display Names", AutoAssignMakeDisplayNames));
-            listOptions.Add(new ListOption("Auto Format Model Year", AutoFormatModelYear));
-            listOptions.Add(new ListOption("Save Changes", SaveChanges));
-            listOptions.AddRange(base.GetListOptions());
-            listOptions.Add(GetHelpOption());
+            menuOptions.Add(new MenuOption("Show Mappings", ShowMappings));
+            menuOptions.Add(new MenuOption("Edit Mapping", EditMapping));
+            menuOptions.Add(new MenuOption("Edit Mappings By Filter", EditMappingsByFilter));
+            menuOptions.Add(new MenuOption("Auto Assign Model Display Names", AutoAssignModelDisplayNames));
+            menuOptions.Add(new MenuOption("Auto Assign Make Display Names", AutoAssignMakeDisplayNames));
+            menuOptions.Add(new MenuOption("Auto Format Model Year", AutoFormatModelYear));
+            menuOptions.Add(new MenuOption("Save Changes", SaveChanges));
+            menuOptions.AddRange(base.GetMenuOptions());
 
-            return listOptions;
+            return menuOptions;
         }
 
         private void UpdateMappingFields(LanguageMapping mapping, List<PropertyInfo> props)
@@ -438,8 +437,8 @@ namespace GTA5AddOnCarHelper
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(EditOptionChoice<LanguageMapping>.OrderByOption());
-                prompt.AddChoice(EditOptionChoice<LanguageMapping>.PartialTextMatchOption());
+                prompt.AddChoice(OrderByOption());
+                prompt.AddChoice(PartialTextMatchOption());
                 prompt.AddChoice(new EditOptionChoice<LanguageMapping>("Show Missing Display Names Only", x => string.IsNullOrEmpty(x.DisplayName)));
 
                 List<string> mappingTypes = list.Where(x => !string.IsNullOrEmpty(x.MappingType)).Select(x => x.MappingType)

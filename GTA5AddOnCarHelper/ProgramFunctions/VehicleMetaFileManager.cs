@@ -120,14 +120,14 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
-        protected override List<ListOption> GetListOptions()
+        protected override List<MenuOption> GetMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Show Meta Files", ShowMetaFiles));
-            listOptions.Add(new ListOption("Create Meta File Directory", BuildMetaDirectory));
-            listOptions.AddRange(base.GetListOptions());
+            List<MenuOption> menuOptions = new List<MenuOption>();
+            menuOptions.Add(new MenuOption("Show Meta Files", ShowMetaFiles));
+            menuOptions.Add(new MenuOption("Create Meta File Directory", BuildMetaDirectory));
+            menuOptions.AddRange(base.GetMenuOptions());
 
-            return listOptions;
+            return menuOptions;
         }
 
         public Dictionary<string, T> GetFiles<T>()

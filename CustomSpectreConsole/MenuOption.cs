@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CustomSpectreConsole
 {
-    public class ListOption
+    public class MenuOption
     {
         #region Properties
 
@@ -19,11 +19,11 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        protected ListOption()
+        protected MenuOption()
         {
         }
 
-        public ListOption(string displayName, Action function)
+        public MenuOption(string displayName, Action function)
         {
             DisplayName = displayName;
             Function = function;
@@ -33,9 +33,9 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public static ListOption CancelOption(string text = null)
+        public static MenuOption CancelOption(string text = null)
         {
-            return new ListOption(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
+            return new MenuOption(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
         }
 
         public override string ToString()
@@ -46,7 +46,7 @@ namespace CustomSpectreConsole
         #endregion
     }
 
-    public class ListOption<T> : ListOption
+    public class MenuOption<T> : MenuOption
     {
         #region Properties
 
@@ -56,7 +56,7 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        public ListOption(string displayName, Func<T> function)
+        public MenuOption(string displayName, Func<T> function)
         {
             DisplayName = displayName;
             Function = function;
@@ -66,15 +66,15 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public static new ListOption<T> CancelOption(string text = null)
+        public static new MenuOption<T> CancelOption(string text = null)
         {
-            return new ListOption<T>(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
+            return new MenuOption<T>(text ?? GlobalConstants.SelectionOptions.Cancel, () => throw new Exception(GlobalConstants.Commands.CANCEL));
         }
 
         #endregion
     }
 
-    public class ListOption<T, U> : ListOption
+    public class MenuOption<T, U> : MenuOption
     {
         #region Properties
 
@@ -84,7 +84,7 @@ namespace CustomSpectreConsole
 
         #region Constructor
 
-        public ListOption(string displayName, Func<T, U> function)
+        public MenuOption(string displayName, Func<T, U> function)
         {
             DisplayName = displayName;
             Function = function;
@@ -94,9 +94,9 @@ namespace CustomSpectreConsole
 
         #region Public API
 
-        public static ListOption<T, U> CancelOption()
+        public static MenuOption<T, U> CancelOption()
         {
-            return new ListOption<T, U>(GlobalConstants.SelectionOptions.Cancel, (T) => throw new Exception(GlobalConstants.Commands.CANCEL));
+            return new MenuOption<T, U>(GlobalConstants.SelectionOptions.Cancel, (T) => throw new Exception(GlobalConstants.Commands.CANCEL));
         }
 
         #endregion

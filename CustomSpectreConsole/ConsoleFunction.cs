@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace CustomSpectreConsole
 {
-    public abstract class ConsoleFunction : ListOption
+    public abstract class ConsoleFunction : MenuOption
     {
         #region Base Class Overrides
 
@@ -45,21 +45,27 @@ namespace CustomSpectreConsole
 
         protected void RunProgramLoop()
         {
-            SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
+            SelectionPrompt<MenuOption> prompt = new SelectionPrompt<MenuOption>();
             prompt.Title = "Select an option:";
-            List<ListOption> options = GetListOptions();
+            List<MenuOption> options = GetMenuOptions();
+
+            if (options.Any(x => x.Function != null && x.Function.Method.HasAttribute<DocumentationAttribute>()))
+                options.Add(GetHelpOption());
+
+            options.Add(new MenuOption(GlobalConstants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(GlobalConstants.Commands.MENU)));
+
             prompt.AddChoices(options);
 
             while (true)
             {
-                ListOption option = AnsiConsole.Prompt(prompt);
+                MenuOption option = AnsiConsole.Prompt(prompt);
 
                 if (option.Function != null || option.IsHelpOption)
                 {
                     try
                     {
                         if (option.IsHelpOption)
-                            ((ListOption<List<ListOption>, bool>)option).Function(options);
+                            ((MenuOption<List<MenuOption>, bool>)option).Function(options);
                         else
                             option.Function();
                     }
@@ -80,24 +86,18 @@ namespace CustomSpectreConsole
             }
         }
 
-        protected virtual List<ListOption> GetListOptions()
-        {
-            List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMainMenu, () => throw new Exception(GlobalConstants.Commands.MENU)));
-
-            return listOptions;
-        }
+        protected abstract List<MenuOption> GetMenuOptions();
         
-        public static ListOption GetHelpOption()
+        public static MenuOption GetHelpOption()
         {
-            return new ListOption<List<ListOption>, bool>(GlobalConstants.SelectionOptions.Help, PrintHelpText);
+            return new MenuOption<List<MenuOption>, bool>(GlobalConstants.SelectionOptions.Help, PrintHelpText);
         }
 
         #endregion
 
         #region Private API
 
-        private static bool PrintHelpText(List<ListOption> options)
+        private static bool PrintHelpText(List<MenuOption> options)
         {
             Rule rule = new Rule("[pink1]Help[/]");
             rule.RuleStyle("blue");

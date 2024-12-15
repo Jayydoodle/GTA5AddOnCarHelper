@@ -38,15 +38,14 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
-        protected override List<ListOption> GetListOptions()
+        protected override List<MenuOption> GetMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Extract Vehicles From Downloads", ExtractDLCFiles));
-            listOptions.Add(new ListOption("Generate DLC List Inserts", GenerateDLCList));
-            listOptions.AddRange(base.GetListOptions());
-            listOptions.Add(GetHelpOption());
+            List<MenuOption> menuOptions = new List<MenuOption>();
+            menuOptions.Add(new MenuOption("Extract Vehicles From Downloads", ExtractDLCFiles));
+            menuOptions.Add(new MenuOption("Generate DLC List Inserts", GenerateDLCList));
+            menuOptions.AddRange(base.GetMenuOptions());
 
-            return listOptions;
+            return menuOptions;
         }
 
         private string GetFilePrefix()
@@ -204,16 +203,16 @@ namespace GTA5AddOnCarHelper
             if (!vehicledir.Exists)
                 vehicledir = WorkingDirectory.CreateSubdirectory(VehicleDirectoryName);
 
-            List<ListOption<List<string>>> options = new List<ListOption<List<string>>>();
-            options.Add(new ListOption<List<string>>("Extract from .zip/.rar/.7z files", ExtractFiles));
-            options.Add(new ListOption<List<string>>("Extract from already unarchived folders", ExtractDirectories));
-            options.Add(ListOption<List<string>>.CancelOption(GlobalConstants.SelectionOptions.ReturnToMenu));
+            List<MenuOption<List<string>>> options = new List<MenuOption<List<string>>>();
+            options.Add(new MenuOption<List<string>>("Extract from .zip/.rar/.7z files", ExtractFiles));
+            options.Add(new MenuOption<List<string>>("Extract from already unarchived folders", ExtractDirectories));
+            options.Add(MenuOption<List<string>>.CancelOption(GlobalConstants.SelectionOptions.ReturnToMenu));
 
-            SelectionPrompt<ListOption<List<string>>> prompt = new SelectionPrompt<ListOption<List<string>>>();
+            SelectionPrompt<MenuOption<List<string>>> prompt = new SelectionPrompt<MenuOption<List<string>>>();
             prompt.Title = "Select the type of extraction you want to perform:";
             prompt.AddChoices(options);
 
-            ListOption<List<string>> choice = AnsiConsole.Prompt<ListOption<List<string>>>(prompt);
+            MenuOption<List<string>> choice = AnsiConsole.Prompt<MenuOption<List<string>>>(prompt);
 
             DirectoryInfo tempDir = EnsureTempDirectory();
 

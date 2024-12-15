@@ -22,9 +22,9 @@ namespace GTA5AddOnCarHelper
             Settings.GetFile(Settings.Node.OpenIVPath, null, false);
             Console.Clear();
 
-            SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
+            SelectionPrompt<MenuOption> prompt = new SelectionPrompt<MenuOption>();
             prompt.Title = "Select an option:";
-            List<ListOption> options = CreateListOptions();
+            List<MenuOption> options = CreateMenuOptions();
             prompt.AddChoices(options);
 
             bool printMenuHeading = true;
@@ -34,7 +34,7 @@ namespace GTA5AddOnCarHelper
                 if (printMenuHeading)
                     PrintMenuHeading();
 
-                ListOption option = AnsiConsole.Prompt(prompt);
+                MenuOption option = AnsiConsole.Prompt(prompt);
 
                 if (option.Function != null || option.IsHelpOption)
                 {
@@ -49,7 +49,7 @@ namespace GTA5AddOnCarHelper
                         {
                             printMenuHeading = false;
                             AnsiConsole.Clear();
-                            ((ListOption<List<ListOption>, bool>)option).Function(options);
+                            ((MenuOption<List<MenuOption>, bool>)option).Function(options);
                         }
                         else
                         {
@@ -113,19 +113,19 @@ namespace GTA5AddOnCarHelper
             }
         }
 
-        private static List<ListOption> CreateListOptions()
+        private static List<MenuOption> CreateMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
+            List<MenuOption> menuOptions = new List<MenuOption>();
 
-            listOptions.Add(DLCExtractor.Instance);
-            listOptions.Add(VehicleMetaFileManager.Instance);
-            listOptions.Add(LanguageGenerator.Instance);
-            listOptions.Add(PremiumDeluxeAutoManager.Instance);
-            listOptions.Add(new ListOption("Open Directory", OpenDirectory));
-            listOptions.Add(ConsoleFunction.GetHelpOption());
-            listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.Exit, null));
+            menuOptions.Add(DLCExtractor.Instance);
+            menuOptions.Add(VehicleMetaFileManager.Instance);
+            menuOptions.Add(LanguageGenerator.Instance);
+            menuOptions.Add(PremiumDeluxeAutoManager.Instance);
+            menuOptions.Add(new MenuOption("Open Directory", OpenDirectory));
+            menuOptions.Add(ConsoleFunction.GetHelpOption());
+            menuOptions.Add(new MenuOption(GlobalConstants.SelectionOptions.Exit, null));
 
-            return listOptions;
+            return menuOptions;
         }
 
         [Documentation("Opens the selected directory in the file system.")]

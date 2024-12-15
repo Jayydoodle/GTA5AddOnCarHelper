@@ -124,19 +124,18 @@ namespace GTA5AddOnCarHelper
 
         #region Private API
 
-        protected override List<ListOption> GetListOptions()
+        protected override List<MenuOption> GetMenuOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
+            List<MenuOption> menuOptions = new List<MenuOption>();
 
-            listOptions.Add(new ListOption("Show All Vehicles", ShowAllVehicles));
-            listOptions.Add(new ListOption("Edit A Vehicle", EditVehicle));
-            listOptions.Add(new ListOption("Edit Multiple Vehicles", GetBulkEditOptions));
-            listOptions.Add(new ListOption("Import Vehicles From GTA 5 Folder", ImportFromGTA5Directory));
-            listOptions.Add(new ListOption("Save Changes", SaveChanges));
-            listOptions.AddRange(base.GetListOptions());
-            listOptions.Add(GetHelpOption());
+            menuOptions.Add(new MenuOption("Show All Vehicles", ShowAllVehicles));
+            menuOptions.Add(new MenuOption("Edit A Vehicle", EditVehicle));
+            menuOptions.Add(new MenuOption("Edit Multiple Vehicles", GetBulkEditOptions));
+            menuOptions.Add(new MenuOption("Import Vehicles From GTA 5 Folder", ImportFromGTA5Directory));
+            menuOptions.Add(new MenuOption("Save Changes", SaveChanges));
+            menuOptions.AddRange(base.GetMenuOptions());
 
-            return listOptions;
+            return menuOptions;
         }
 
         private void UpdateCarFields(PremiumDeluxeCar car, List<PropertyInfo> props = null)
@@ -373,24 +372,23 @@ namespace GTA5AddOnCarHelper
         [Documentation(GetBulkEditOptionsSummary)]
         private void GetBulkEditOptions()
         {
-            List<ListOption> listOptions = new List<ListOption>();
-            listOptions.Add(new ListOption("Edit Vehicles By Filter", EditVehiclesByFilter));
-            listOptions.Add(new ListOption("Bulk Edit Vehicles", BulkEditVehicles));
-            listOptions.Add(new ListOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
-            listOptions.Add(new ListOption("Update Vehicle Prices From Web Search", GenerateVehiclePrices));
-            listOptions.Add(new ListOption("Auto Assign Class Names From Meta Files", AutoAssignClassNames));
-            listOptions.Add(new ListOption(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
-            listOptions.Add(GetHelpOption());
+            List<MenuOption> menuOptions = new List<MenuOption>();
+            menuOptions.Add(new MenuOption("Edit Vehicles By Filter", EditVehiclesByFilter));
+            menuOptions.Add(new MenuOption("Bulk Edit Vehicles", BulkEditVehicles));
+            menuOptions.Add(new MenuOption("Update Names From Language Files", UpdateNamesFromLanguageFiles));
+            menuOptions.Add(new MenuOption("Update Vehicle Prices From Web Search", GenerateVehiclePrices));
+            menuOptions.Add(new MenuOption("Auto Assign Class Names From Meta Files", AutoAssignClassNames));
+            menuOptions.Add(new MenuOption(GlobalConstants.SelectionOptions.ReturnToMenu, () => throw new Exception(GlobalConstants.Commands.CANCEL)));
 
-            SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
+            SelectionPrompt<MenuOption> prompt = new SelectionPrompt<MenuOption>();
             prompt.Title = "Select a method for editing:";
-            prompt.AddChoices(listOptions);
+            prompt.AddChoices(menuOptions);
 
-            ListOption choice = AnsiConsole.Prompt(prompt);
+            MenuOption choice = AnsiConsole.Prompt(prompt);
 
             if (choice.IsHelpOption)
             {
-                ((ListOption<List<ListOption>, bool>)choice).Function(listOptions);
+                ((MenuOption<List<MenuOption>, bool>)choice).Function(menuOptions);
                 GetBulkEditOptions();
             }
             else
@@ -503,28 +501,28 @@ namespace GTA5AddOnCarHelper
                 carsToUpdate = carsToUpdate.Where(x => x.Price <= 0).ToList();
             };
 
-            SelectionPrompt<ListOption> introPrompt = new SelectionPrompt<ListOption>();
+            SelectionPrompt<MenuOption> introPrompt = new SelectionPrompt<MenuOption>();
             introPrompt.Title = string.Format("This action will automatically assign prices to the " +
             "vehicles in the list from a {0} search.  How would you like to proceed?", GlobalConstants.MarkUp.Google);
-            introPrompt.AddChoice(new ListOption("Assign Prices To Vehicles With Price = 0", filterCars));
-            introPrompt.AddChoice(new ListOption("Assign Prices To All Vehicles", null));
-            introPrompt.AddChoice(ListOption.CancelOption());
+            introPrompt.AddChoice(new MenuOption("Assign Prices To Vehicles With Price = 0", filterCars));
+            introPrompt.AddChoice(new MenuOption("Assign Prices To All Vehicles", null));
+            introPrompt.AddChoice(MenuOption.CancelOption());
 
-            ListOption introOption = AnsiConsole.Prompt(introPrompt);
+            MenuOption introOption = AnsiConsole.Prompt(introPrompt);
 
             if (introOption.Function != null)
                 introOption.Function();
 
-            SelectionPrompt<ListOption<string>> executionTypePrompt = new SelectionPrompt<ListOption<string>>();
+            SelectionPrompt<MenuOption<string>> executionTypePrompt = new SelectionPrompt<MenuOption<string>>();
             executionTypePrompt.Title = string.Format("Web scraping {0} results can sometimes result in a [red]temporary IP ban[/] that will render this utility useless.  Here you can " +
             "select how quickly you want to perform the search in order to limit the possibility of an IP ban.  [green]Fast[/] will complete the search within a few seconds, but repeated " +
             "use will end up in an IP ban.  [blue]Safe[/] will reduce the speed of the searches so that a ban is unlikely, but will take around 10 minutes per 100 vehicles.  With either " +
             "option it is recommended that you use a VPN if you have one avaible.  Which do you choose?", GlobalConstants.MarkUp.Google);
-            executionTypePrompt.AddChoice(new ListOption<string>("Fast", () => nameof(GeneratePricesFastExecution)));
-            executionTypePrompt.AddChoice(new ListOption<string>("Safe", () => nameof(GeneratePricesSafeExecution)));
-            executionTypePrompt.AddChoice(ListOption<string>.CancelOption());
+            executionTypePrompt.AddChoice(new MenuOption<string>("Fast", () => nameof(GeneratePricesFastExecution)));
+            executionTypePrompt.AddChoice(new MenuOption<string>("Safe", () => nameof(GeneratePricesSafeExecution)));
+            executionTypePrompt.AddChoice(MenuOption<string>.CancelOption());
 
-            ListOption<string> executionTypeOption = AnsiConsole.Prompt(executionTypePrompt);
+            MenuOption<string> executionTypeOption = AnsiConsole.Prompt(executionTypePrompt);
             string selection = executionTypeOption.Function();
             MethodInfo method = GetType().GetMethod(selection, BindingFlags.Instance|BindingFlags.NonPublic);
 
@@ -559,15 +557,15 @@ namespace GTA5AddOnCarHelper
                 return;
             }
 
-            SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>> assignmentPrompt = new SelectionPrompt<ListOption<ConcurrentDictionary<string, List<int>>, bool>>();
+            SelectionPrompt<MenuOption<ConcurrentDictionary<string, List<int>>, bool>> assignmentPrompt = new SelectionPrompt<MenuOption<ConcurrentDictionary<string, List<int>>, bool>>();
             assignmentPrompt.Title = string.Format("Pricing information was found for [pink1]{0}[/] vehicles.  " +
             "In most instances a vehicle will have multiple values to choose from.  How would you like to proceed?", pricesByCar.Count());
 
-            assignmentPrompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
-            assignmentPrompt.AddChoice(new ListOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
-            assignmentPrompt.AddChoice(ListOption<ConcurrentDictionary<string, List<int>>, bool>.CancelOption());
+            assignmentPrompt.AddChoice(new MenuOption<ConcurrentDictionary<string, List<int>>, bool>("Auto Assign Prices From Results", AutoCalculateVehiclePrices));
+            assignmentPrompt.AddChoice(new MenuOption<ConcurrentDictionary<string, List<int>>, bool>("Manually Assign Prices From Results", ManuallyAssignVehiclePrices));
+            assignmentPrompt.AddChoice(MenuOption<ConcurrentDictionary<string, List<int>>, bool>.CancelOption());
 
-            ListOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(assignmentPrompt);
+            MenuOption<ConcurrentDictionary<string, List<int>>, bool> option = AnsiConsole.Prompt(assignmentPrompt);
             option.Function(pricesByCar);
         }
 
@@ -581,14 +579,14 @@ namespace GTA5AddOnCarHelper
                 carsToUpdate = carsToUpdate.Where(x => x.Class == PremiumDeluxeCar.NoClass);
             };
 
-            SelectionPrompt<ListOption> prompt = new SelectionPrompt<ListOption>();
+            SelectionPrompt<MenuOption> prompt = new SelectionPrompt<MenuOption>();
             prompt.Title = "This action will automatically assign class names from the source vehicles.meta " +
             "files to the vehicless in the list.\nHow would you like to proceed?";
-            prompt.AddChoice(new ListOption("Assign Class Names To All Vehicles", null));
-            prompt.AddChoice(new ListOption("Assign Class Names To Vehicles With No Class ('none')", filterCars));
-            prompt.AddChoice(ListOption.CancelOption());
+            prompt.AddChoice(new MenuOption("Assign Class Names To All Vehicles", null));
+            prompt.AddChoice(new MenuOption("Assign Class Names To Vehicles With No Class ('none')", filterCars));
+            prompt.AddChoice(MenuOption.CancelOption());
 
-            ListOption option = AnsiConsole.Prompt(prompt);
+            MenuOption option = AnsiConsole.Prompt(prompt);
 
             if (option.Function != null)
                 option.Function();
@@ -627,12 +625,12 @@ namespace GTA5AddOnCarHelper
         {
             List<PremiumDeluxeLanguageFile> langFiles = PremiumDeluxeLanguageFile.GetAll(PremiumDeluxeLangFolder);
 
-            SelectionPrompt<ListOption<string>> prompt = new SelectionPrompt<ListOption<string>>();
+            SelectionPrompt<MenuOption<string>> prompt = new SelectionPrompt<MenuOption<string>>();
             prompt.Title = "\nSelect your target language: ";
-            prompt.AddChoice(ListOption<string>.CancelOption());
-            prompt.AddChoices(langFiles.Select(x => new ListOption<string>(x.DisplayName, () => x.SourceFileName)));
+            prompt.AddChoice(MenuOption<string>.CancelOption());
+            prompt.AddChoices(langFiles.Select(x => new MenuOption<string>(x.DisplayName, () => x.SourceFileName)));
 
-            ListOption<string> choice = AnsiConsole.Prompt(prompt);
+            MenuOption<string> choice = AnsiConsole.Prompt(prompt);
             string languageSelection = choice.Function();
 
             PremiumDeluxeLanguageFile selectedFile = langFiles.FirstOrDefault(x => x.SourceFileName == languageSelection);
@@ -644,7 +642,7 @@ namespace GTA5AddOnCarHelper
             foreach (KeyValuePair<string, List<PremiumDeluxeCar>> pair in carsByClass)
             {
                 StringBuilder content = new StringBuilder();
-                pair.Value.OrderByDescending(car => car.Name).ToList().ForEach(car => content.AppendLine(car.Save()));
+                pair.Value.OrderByDescending(car => car.Make).ThenByDescending(car => car.Name).ToList().ForEach(car => content.AppendLine(car.Save()));
                 Utilities.WriteToFile(WorkingDirectory, string.Format("{0}{1}", pair.Key, Constants.Extentions.Ini), content);
             };
 
@@ -705,8 +703,8 @@ namespace GTA5AddOnCarHelper
                 prompt.Required = false;
                 prompt.PageSize = 20;
 
-                prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.OrderByOption());
-                prompt.AddChoice(EditOptionChoice<PremiumDeluxeCar>.PartialTextMatchOption());
+                prompt.AddChoice(OrderByOption());
+                prompt.AddChoice(PartialTextMatchOption());
 
                 List<string> classes = cars.Where(x => !string.IsNullOrEmpty(x.Class)).Select(x => x.Class)
                                            .OrderBy(x => x).Distinct().Select(x => Markup.Escape(x)).ToList();
